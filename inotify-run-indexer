@@ -1,0 +1,26 @@
+#!/bin/sh
+
+# This script expects the ELASTIC_URL variable to be defined
+
+if [ -z "$ELASTIC_URL" ]; then
+  echo "Export the ELASTIC_URL varialble on the ENVIRONMENT"
+  exit 1
+fi
+DATADIR="$1"
+if [ ! -d "$DATADIR" ]; then
+  echo "Directory '$DATADIR' does not exist, create or mount it"
+  exit 1
+fi
+EXT=".indexer"
+JAR="/app/kyso-indexer-jar-with-dependencies.jar"
+
+do_index() {
+  java -jar "$JAR" "$ELASTIC_URL" "$@" &
+}
+
+inotifywait -q -m -e close_write,moved_to --format "%w%f" "$DATADIR" |
+  while read -r _filename; do
+    if [ "${_filename%%"$EXT"}" != "${_filename}" ]; then
+		do_index "${_filename}"
+	fi
+  done

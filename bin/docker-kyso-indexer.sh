@@ -7,6 +7,7 @@ set -e
 RELPATH_TO_WORKDIR=".."
 
 # Variables
+ELASTIC_URL="${ELASTIC_URL:-http://0.0.0.0:9200}"
 IMAGE_NAME="k3d-registry.lo.kyso.io:5000/kyso-indexer"
 IMAGE_TAG="latest"
 CONTAINER_NAME="kyso-indexer"
@@ -106,7 +107,7 @@ docker_epsh() {
   DOCKER_COMMAND="$(
     printf "%s" \
       "docker run --entrypoint '/bin/sh' --rm -ti --name '$CONTAINER_NAME'" \
-      " $VOLUMES '$BUILD_TAG'"
+      " -e ELASTIC_URL='$ELASTIC_URL' $VOLUMES '$BUILD_TAG'"
   )"
   eval "$DOCKER_COMMAND"
 }
@@ -128,7 +129,7 @@ docker_run() {
   DOCKER_COMMAND="$(
     printf "%s" \
       "docker run -d --name '$CONTAINER_NAME' $CONTAINER_VARS" \
-      " $VOLUMES '$BUILD_TAG'"
+      " -e ELASTIC_URL='$ELASTIC_URL' $VOLUMES '$BUILD_TAG'"
   )"
   eval "$DOCKER_COMMAND"
 }
