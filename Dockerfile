@@ -18,6 +18,7 @@ RUN mvn clean install
 FROM openjdk:17-alpine AS service
 
 # Install fswatch
+# https://github.com/emcrisostomo/fswatch/blob/master/docker/alpine/Dockerfile.in
 RUN apk add --no-cache file git autoconf automake libtool gettext gettext-dev make g++ texinfo curl
 
 ENV ROOT_HOME /root
@@ -30,7 +31,8 @@ WORKDIR ${ROOT_HOME}/fswatch
 RUN git checkout ${FSWATCH_BRANCH}
 RUN ./autogen.sh && ./configure && make -j
 
-RUN /root/fswatch/fswatch --help
+# This returns /bin/sh: /root/fswatch/fswatch: Permission denied
+# RUN /root/fswatch/fswatch --help
 
 WORKDIR /app
 
@@ -38,6 +40,10 @@ WORKDIR /app
 # COPY --chown=java:java --from=builder /app/target/kyso-indexer-jar-with-dependencies.jar ./
 COPY --from=builder /app/target/kyso-indexer-jar-with-dependencies.jar ./
 
+ENV WATCH_FOLDER .
+
+# This should be the command
+# CMD fswatch -e ".*" -i ".*/[^.]*\\.indexer$" --event Created ${WATCH_FOLDER} | xargs -I '{}' java -jar target/kyso-indexer-jar-with-dependencies.jar {}
 # Container command
 ENTRYPOINT ["java -jar kyso-indexer-jar-with-dependencies.jar"]
 CMD ["."]
