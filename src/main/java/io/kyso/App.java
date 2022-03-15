@@ -41,8 +41,10 @@ public class App {
     }
 
     public static void main(String[] args) throws Exception {
-        System.out.println(args[0]);
-        Path path = Paths.get(args[0]);
+        System.out.println("Processing file: " + args[1]);
+        System.out.println("Sending indexed documents to: " + args[0]);
+        Path path = Paths.get(args[1]);
+        String elasticUrl = args[0];
 
         // We receive a file with paths, so every line is a file to be processed
         List<String> allFiles = Files.readAllLines(path);
@@ -58,7 +60,6 @@ public class App {
                     String result = App.extractContentUsingParser(stream);
 
                     // Save it into Elasticsearch
-
                     KysoIndex index = new KysoIndex();
 
                     index.setType("report");
@@ -80,7 +81,7 @@ public class App {
                     index.setAuthor(new ArrayList<>());
                     index.setPeople(new ArrayList<>());
 
-                    pushContentToElastic(index);
+                    pushContentToElastic(index, elasticUrl);
                 }
 
             } catch(TaggedIOException ex) {
@@ -98,7 +99,7 @@ public class App {
         // REMOVE FOLDER
     }
 
-    public static void pushContentToElastic(KysoIndex data) {
+    public static void pushContentToElastic(KysoIndex data, String elasticUrl) {
         try {
             HttpClient client = HttpClient.newHttpClient();
 
@@ -106,7 +107,7 @@ public class App {
             String indexAsJson = gson.toJson(data);
 
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(new URI("http://localhost:9200/kyso-index/report"))
+                    .uri(new URI(elasticUrl + "/kyso-index/report"))
                     .headers("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(indexAsJson))
                     .build();

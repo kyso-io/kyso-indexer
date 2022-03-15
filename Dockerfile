@@ -15,7 +15,7 @@ COPY ./ ./
 RUN mvn clean install
 
 # Production image
-FROM openjdk:17-alpine AS service
+FROM openjdk:17 AS service
 
 # Install fswatch
 # https://github.com/emcrisostomo/fswatch/blob/master/docker/alpine/Dockerfile.in
@@ -32,7 +32,7 @@ RUN git checkout ${FSWATCH_BRANCH}
 RUN ./autogen.sh && ./configure && make -j
 
 # This returns /bin/sh: /root/fswatch/fswatch: Permission denied
-# RUN /root/fswatch/fswatch --help
+RUN /root/fswatch/fswatch --help
 
 WORKDIR /app
 
