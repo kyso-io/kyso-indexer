@@ -1,43 +1,28 @@
+ARG ALPINE_VERSION=latest
 # Builder image
-FROM openjdk:17-jdk-alpine AS builder
-
-RUN apk add --update \
-    curl \
-    maven \
-    && rm -rf /var/cache/apk/*
-
-RUN apk add maven
-
+FROM registry.kyso.io/docker/alpine:${ALPINE_VERSION} as builder
+RUN apk update && apk add --no-cache openjdk17 curl maven\
+ && rm -rf /var/cache/apk/*
 WORKDIR /app
-
 COPY ./ ./
-
 RUN mvn clean install
 
 # Production image
-FROM openjdk:17-alpine AS service
-
+FROM registry.kyso.io/docker/alpine:${ALPINE_VERSION} as service
 # Install fswatch
-RUN apk add --no-cache file git autoconf automake libtool gettext gettext-dev make g++ texinfo curl
-
-ENV ROOT_HOME /root
-ENV FSWATCH_BRANCH 1.16.0
-
-WORKDIR ${ROOT_HOME}
-RUN git clone https://github.com/emcrisostomo/fswatch.git
-
-WORKDIR ${ROOT_HOME}/fswatch
-RUN git checkout ${FSWATCH_BRANCH}
-RUN ./autogen.sh && ./configure && make -j
-
-RUN /root/fswatch/fswatch --help
-
+RUN apk update \
+ && apk add --no-cache openjdk17 file git autoconf automake libtool gettext\
+ gettext-dev make g++ texinfo curl\
+ && git clone --depth 1 https://github.com/emcrisostomo/fswatch.git -b 1.16.0\
+ && cd fswatch && ./autogen.sh && ./configure && make install && cd ..\
+ && apk del file git autoconf automake libtool gettext gettext-dev make g++\
+ texinfo curl\
+ && rm -rf fswatch /var/cache/apk/*
 WORKDIR /app
-
 # Copy files required to run the application
-# COPY --chown=java:java --from=builder /app/target/kyso-indexer-jar-with-dependencies.jar ./
 COPY --from=builder /app/target/kyso-indexer-jar-with-dependencies.jar ./
+# Declare /data as a volume
+VOLUME /data
 
 # Container command
-ENTRYPOINT ["java -jar kyso-indexer-jar-with-dependencies.jar"]
-CMD ["."]
+CMD ["java", "-jar", "kyso-indexer-jar-with-dependencies.jar", "/data"]
