@@ -4,9 +4,12 @@ import java.util.List;
 
 public class KysoIndex {
     private String type;
+    private String entityId;
     private String link;
-    private List<String> people;
-    private List<String> author;
+    private String organizationSlug;
+    private String teamSlug;
+    private String people;
+    private String tags;
     private String content;
 
     public KysoIndex() {
@@ -21,6 +24,14 @@ public class KysoIndex {
         this.type = type;
     }
 
+    public String getEntityId() {
+        return entityId;
+    }
+
+    public void setEntityId(String entityId) {
+        this.entityId = entityId;
+    }
+
     public String getLink() {
         return link;
     }
@@ -29,20 +40,36 @@ public class KysoIndex {
         this.link = link;
     }
 
-    public List<String> getPeople() {
+    public String getOrganizationSlug() {
+        return organizationSlug;
+    }
+
+    public void setOrganizationSlug(String organizationSlug) {
+        this.organizationSlug = organizationSlug;
+    }
+
+    public String getTeamSlug() {
+        return teamSlug;
+    }
+
+    public void setTeamSlug(String teamSlug) {
+        this.teamSlug = teamSlug;
+    }
+
+    public String getPeople() {
         return people;
     }
 
-    public void setPeople(List<String> people) {
+    public void setPeople(String people) {
         this.people = people;
     }
 
-    public List<String> getAuthor() {
-        return author;
+    public String getTags() {
+        return tags;
     }
 
-    public void setAuthor(List<String> author) {
-        this.author = author;
+    public void setTags(String tags) {
+        this.tags = tags;
     }
 
     public String getContent() {
