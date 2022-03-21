@@ -76,9 +76,9 @@ public class App {
                     index.setContent(result);
 
                     String[] fileSplitted = file.split("/");
-                    String organization = fileSplitted[0];
-                    String team = fileSplitted[1];
-                    String report = fileSplitted[3];
+                    String organization = fileSplitted[1];
+                    String team = fileSplitted[2];
+                    String report = fileSplitted[4];
                     String composedLink = "";
 
                     for(int i = 4; i < fileSplitted.length; i++) {
