@@ -46,7 +46,7 @@ public class App {
 
     public static void main(String[] args) throws Exception {
         System.out.println("Processing file: " + args[1]);
-        System.out.println("Sending indexed documents to: " + args[0]);
+        System.out.println("Using: " + args[0]);
         System.out.println("Ignoring files: " + extensionsToIgnore);
         Path path = Paths.get(args[1]);
         String elasticUrl = args[0];
@@ -136,6 +136,7 @@ public class App {
             bulkInsert.forEach(item -> item.setTeamSlug(finalKysoMap.get("team").toString()));
         }
 
+        System.out.println("Uploading to Elastic")
         // Save into elastic
         bulkInsert.forEach(item -> pushContentToElastic(item, elasticUrl));
 
