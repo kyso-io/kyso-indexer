@@ -76,8 +76,8 @@ public class App {
                     index.setContent(result);
 
                     String[] fileSplitted = file.split("/");
-                    String organization = fileSplitted[1];
-                    String team = fileSplitted[2];
+                    String organization = fileSplitted[2];
+                    String team = fileSplitted[3];
                     String report = fileSplitted[5];
                     String composedLink = "";
                     String version = fileSplitted[6];
@@ -87,7 +87,7 @@ public class App {
                     }
 
                     System.out.println("ORGANIZATION¿¿ " + organization);
-                    String finalPath = organization + "/" + team + "/" + report + "?path=" + composedLink.substring(1) + "version=" + version;
+                    String finalPath = organization + "/" + team + "/" + report + "?path=" + composedLink.substring(1) + "&version=" + version;
 
                     String filename = filePath.getFileName().toString();
                     if(filename.equalsIgnoreCase("kyso.yaml") ||
