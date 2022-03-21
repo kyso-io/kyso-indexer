@@ -30,7 +30,7 @@ import java.util.*;
 // fswatch -e ".*" -i ".*/[^.]*\\.indexer$" --event Created . | xargs -I '{}' java -jar target/kyso-indexer-jar-with-dependencies.jar http://localhost:9200 {}
 
 public class App {
-    private static String[] extensionsToIgnore = { "js", "css", "py", "woff", "woff2" };
+    private static String[] extensionsToIgnore = { "js", "css", "py", "woff", "woff2", "scss", "java" };
 
     public static boolean isIgnorable(String path) {
         Optional<String> extension = getExtensionByString(path);
@@ -78,7 +78,7 @@ public class App {
                     String[] fileSplitted = file.split("/");
                     String organization = fileSplitted[1];
                     String team = fileSplitted[2];
-                    String report = fileSplitted[4];
+                    String report = fileSplitted[5];
                     String composedLink = "";
 
                     for(int i = 4; i < fileSplitted.length; i++) {
