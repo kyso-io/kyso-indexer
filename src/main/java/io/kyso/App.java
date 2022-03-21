@@ -57,6 +57,8 @@ public class App {
         List<KysoIndex> bulkInsert = new ArrayList<>();
 
         for(String file : allFiles) {
+            file = "/data" + file;
+
             System.out.println("Processing file: " + file);
             try {
                 if(isIgnorable(file)) {
