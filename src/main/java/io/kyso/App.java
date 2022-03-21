@@ -144,10 +144,11 @@ public class App {
         bulkInsert.forEach(item -> pushContentToElastic(item, elasticUrl));
 
         // Delete folder
+        FileUtils.forceDelete(new File(args[1]);
         for(String file : allFiles) {
             try {
-                FileUtils.forceDelete(new File(file));
-                System.out.println("Deleted " + file);
+                FileUtils.forceDelete(new File("/data" + file));
+                System.out.println("Deleted " + "/data" + file);
             } catch(Exception ex) {
                 // silent
             }
