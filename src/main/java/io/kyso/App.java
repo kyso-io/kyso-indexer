@@ -136,7 +136,7 @@ public class App {
             bulkInsert.forEach(item -> item.setTeamSlug(finalKysoMap.get("team").toString()));
         }
 
-        System.out.println("Uploading to Elastic");
+        System.out.println("Uploading to Elastic " + bulkInsert.size() + " registries");
         // Save into elastic
         bulkInsert.forEach(item -> pushContentToElastic(item, elasticUrl));
 
@@ -186,13 +186,16 @@ public class App {
 
     public static void pushContentToElastic(KysoIndex data, String elasticUrl) {
         try {
+            URI uri = new URI(elasticUrl + "/kyso-index/report");
+            System.out.println("URI: " + uri.toString());
+            System.out.println("Pushing content: " + data.getContent());
             HttpClient client = HttpClient.newHttpClient();
 
             Gson gson = new Gson();
             String indexAsJson = gson.toJson(data);
 
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(new URI(elasticUrl + "/kyso-index/report"))
+                    .uri(uri)
                     .headers("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(indexAsJson))
                     .build();
@@ -201,7 +204,6 @@ public class App {
 
             System.out.println("Uploading to elastic returned: " + response.statusCode());
             System.out.println(response.body());
-
         } catch(Exception ex) {
             System.out.println("Can't push content to elasticsearch");
             ex.printStackTrace();
