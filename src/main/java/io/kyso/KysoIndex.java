@@ -1,7 +1,5 @@
 package io.kyso;
 
-import java.util.List;
-
 public class KysoIndex {
     private String type;
     private String entityId;
