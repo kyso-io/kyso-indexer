@@ -81,11 +81,12 @@ public class App {
                     String report = fileSplitted[5];
                     String composedLink = "";
                     String version = fileSplitted[6];
-                    String contentPath = file
+
                     for(int i = 7; i < fileSplitted.length; i++) {
                         composedLink = composedLink + "/" + fileSplitted[i];
                     }
 
+                    System.out.println("ORGANIZATION¿¿ " + organization);
                     String finalPath = organization + "/" + team + "/" + report + "?path=" + composedLink.substring(1) + "version=" + version;
 
                     String filename = filePath.getFileName().toString();
