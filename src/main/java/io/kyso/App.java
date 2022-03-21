@@ -80,12 +80,13 @@ public class App {
                     String team = fileSplitted[2];
                     String report = fileSplitted[5];
                     String composedLink = "";
-
-                    for(int i = 5; i < fileSplitted.length; i++) {
+                    String version = fileSplitted[6];
+                    String contentPath = file
+                    for(int i = 7; i < fileSplitted.length; i++) {
                         composedLink = composedLink + "/" + fileSplitted[i];
                     }
 
-                    String finalPath = organization + "/" + team + "/" + report + "?path=" + composedLink.substring(1);
+                    String finalPath = organization + "/" + team + "/" + report + "?path=" + composedLink.substring(1) + "version=" + version;
 
                     String filename = filePath.getFileName().toString();
                     if(filename.equalsIgnoreCase("kyso.yaml") ||
