@@ -136,7 +136,7 @@ public class App {
             bulkInsert.forEach(item -> item.setTeamSlug(finalKysoMap.get("team").toString()));
         }
 
-        System.out.println("Uploading to Elastic")
+        System.out.println("Uploading to Elastic");
         // Save into elastic
         bulkInsert.forEach(item -> pushContentToElastic(item, elasticUrl));
 
