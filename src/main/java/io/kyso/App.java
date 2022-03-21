@@ -30,7 +30,8 @@ import java.util.*;
 // fswatch -e ".*" -i ".*/[^.]*\\.indexer$" --event Created . | xargs -I '{}' java -jar target/kyso-indexer-jar-with-dependencies.jar http://localhost:9200 {}
 
 public class App {
-    private static String[] extensionsToIgnore = { "js", "css", "py", "woff", "woff2", "scss", "java", "jpg", "jpeg", "png", "svg", "gif" };
+    private static String[] extensionsToIgnore = { "js", "css", "py", "woff", "woff2", "scss", "java", "jpg", "jpeg",
+            "png", "svg", "gif", "eot", "ttf" };
 
     public static boolean isIgnorable(String path) {
         Optional<String> extension = getExtensionByString(path);
@@ -139,6 +140,10 @@ public class App {
 
         if(kysoMap.containsKey("team")) {
             bulkInsert.forEach(item -> item.setTeamSlug(finalKysoMap.get("team").toString()));
+        }
+
+        if(kysoMap.containsKey("title")) {
+            bulkInsert.forEach(item -> item.setTitle(finalKysoMap.get("title").toString()));
         }
 
         System.out.println("Uploading to Elastic " + bulkInsert.size() + " registries");

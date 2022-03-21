@@ -1,6 +1,7 @@
 package io.kyso;
 
 public class KysoIndex {
+    private String title;
     private String type;
     private String entityId;
     private String link;
@@ -76,5 +77,13 @@ public class KysoIndex {
 
     public void setContent(String content) {
         this.content = content;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
     }
 }
