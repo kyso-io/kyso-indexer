@@ -30,7 +30,7 @@ import java.util.*;
 // fswatch -e ".*" -i ".*/[^.]*\\.indexer$" --event Created . | xargs -I '{}' java -jar target/kyso-indexer-jar-with-dependencies.jar http://localhost:9200 {}
 
 public class App {
-    private static String[] extensionsToIgnore = { "js", "css", "py", "woff", "woff2", "scss", "java" };
+    private static String[] extensionsToIgnore = { "js", "css", "py", "woff", "woff2", "scss", "java", "jpg", "jpeg", "png", "svg", "gif" };
 
     public static boolean isIgnorable(String path) {
         Optional<String> extension = getExtensionByString(path);
@@ -47,7 +47,7 @@ public class App {
     public static void main(String[] args) throws Exception {
         System.out.println("Processing file: " + args[1]);
         System.out.println("Using: " + args[0]);
-        System.out.println("Ignoring files: " + extensionsToIgnore);
+        System.out.println("Ignoring files: " + extensionsToIgnore.toString());
         Path path = Paths.get(args[1]);
         String elasticUrl = args[0];
         Map<String, Object> kysoMap = new HashMap<>();
@@ -81,7 +81,7 @@ public class App {
                     String report = fileSplitted[5];
                     String composedLink = "";
 
-                    for(int i = 4; i < fileSplitted.length; i++) {
+                    for(int i = 5; i < fileSplitted.length; i++) {
                         composedLink = composedLink + "/" + fileSplitted[i];
                     }
 
@@ -191,8 +191,6 @@ public class App {
     public static void pushContentToElastic(KysoIndex data, String elasticUrl) {
         try {
             URI uri = new URI(elasticUrl + "/kyso-index/report");
-            System.out.println("URI: " + uri.toString());
-            System.out.println("Pushing content: " + data.getContent());
             HttpClient client = HttpClient.newHttpClient();
 
             Gson gson = new Gson();
