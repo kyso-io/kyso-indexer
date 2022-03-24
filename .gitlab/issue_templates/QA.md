@@ -1,28 +1,20 @@
-## ABSTRACT:
+### Abstract
 
+### Context
+* **URL:** 
+* **User and Role:**
 
-## CONTEXT
-* **Display:** 
-* **Role:** 
+### Action
 
-## ACTION
+##### Step by step
 
-### Step by step:
+##### Actual result
 
+##### Expected result
 
+### Additional information
 
-### Actual result
-
-
-
-### Expected result
-
-
-
-## ADDITIONAL INFORMATION
-
-
-## TECHNICAL INFORMATION
- * **Device:** 
- * **Browser:** 
+### Technical information
+ * **Device:**
+ * **Browser:**
  * **Version:** 
