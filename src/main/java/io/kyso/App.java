@@ -25,6 +25,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 // Command to watch files and run the process
 // fswatch -e ".*" -i ".*/[^.]*\\.indexer$" --event Created . | xargs -I '{}' java -jar target/kyso-indexer-jar-with-dependencies.jar http://localhost:9200 {}
@@ -87,7 +89,6 @@ public class App {
                         composedLink = composedLink + "/" + fileSplitted[i];
                     }
 
-                    System.out.println("ORGANIZATION¿¿ " + organization);
                     String finalPath = organization + "/" + team + "/" + report + "?path=" + composedLink.substring(1) + "&version=" + version;
 
                     String filename = filePath.getFileName().toString();
@@ -121,10 +122,6 @@ public class App {
             }
         }
 
-        // REMOVE FOLDER
-        System.out.println("Kyso map is");
-        System.out.println(kysoMap);
-
         Map<String, Object> finalKysoMap = kysoMap;
         if(kysoMap.containsKey("tags")) {
             bulkInsert.forEach(item -> item.setTags(finalKysoMap.get("tags").toString()));
@@ -151,16 +148,27 @@ public class App {
         bulkInsert.forEach(item -> pushContentToElastic(item, elasticUrl));
 
         // Delete folder
-        FileUtils.forceDelete(new File(args[1]));
-        for(String file : allFiles) {
+        deleteFiles(new File(args[1]), allFiles);
+    }
+
+    public static void deleteFiles(File kysoIndexerFile, List<String> allFiles) {
+        Executors.newSingleThreadExecutor().submit(() -> {
             try {
-                FileUtils.forceDelete(new File("/data" + file));
-                System.out.println("Deleted " + "/data" + file);
-            } catch(Exception ex) {
+                TimeUnit.SECONDS.sleep(30);
+                FileUtils.forceDelete(kysoIndexerFile);
+
+                for (String file : allFiles) {
+                    try {
+                        FileUtils.forceDelete(new File("/data" + file));
+                        System.out.println("Deleted " + "/data" + file);
+                    } catch (Exception ex) {
+                        // silent
+                    }
+                }
+            } catch (Exception ex) {
                 // silent
             }
-        }
-
+        });
     }
 
     public static Map<String, Object> readKysoFile(Path kysoFilePath) {
