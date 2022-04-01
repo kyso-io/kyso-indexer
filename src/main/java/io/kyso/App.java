@@ -152,9 +152,9 @@ public class App {
     }
 
     public static void deleteFiles(File kysoIndexerFile, List<String> allFiles) {
-        Executors.newSingleThreadExecutor().submit(() -> {
+        //Executors.newSingleThreadExecutor().submit(() -> {
             try {
-                TimeUnit.SECONDS.sleep(30);
+                // TimeUnit.SECONDS.sleep(30);
                 FileUtils.forceDelete(kysoIndexerFile);
 
                 for (String file : allFiles) {
@@ -168,7 +168,7 @@ public class App {
             } catch (Exception ex) {
                 // silent
             }
-        });
+        //});
     }
 
     public static Map<String, Object> readKysoFile(Path kysoFilePath) {
