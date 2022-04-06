@@ -25,8 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 // Command to watch files and run the process
 // fswatch -e ".*" -i ".*/[^.]*\\.indexer$" --event Created . | xargs -I '{}' java -jar target/kyso-indexer-jar-with-dependencies.jar http://localhost:9200 {}
@@ -50,125 +49,126 @@ public class App {
     public static void main(String[] args) throws Exception {
         System.out.println("Processing file: " + args[1]);
         System.out.println("Using: " + args[0]);
-        System.out.println("Ignoring files: " + extensionsToIgnore.toString());
+        String mode = "index";
+
+        if(args.length == 3) {
+            if(args[2].equalsIgnoreCase("--reindex")) {
+                mode = "reindex";
+            } else {
+                System.out.println("Option not recognized, do you mean --reindex?");
+                return;
+            }
+        }
+
         Path path = Paths.get(args[1]);
         String elasticUrl = args[0];
-        Map<String, Object> kysoMap = new HashMap<>();
 
-        // We receive a file with paths, so every line is a file to be processed
-        List<String> allFiles = Files.readAllLines(path);
-        List<KysoIndex> bulkInsert = new ArrayList<>();
+        if(mode.equalsIgnoreCase("index")) {
+            // We receive a file with paths, so every line is a file to be processed
+            List<String> allFiles = Files.readAllLines(path);
+            List<KysoIndex> bulkInsert = new ArrayList<>();
 
-        for(String file : allFiles) {
-            file = "/data" + file;
+            Map<String, Object> kysoMap = findKysoYamlOrJson(allFiles);
 
-            System.out.println("Processing file: " + file);
-            try {
-                if(isIgnorable(file)) {
-                    // System.out.println("File " + file + " is ignored");
-                } else {
-                    // System.out.println("Processing file " + file);
-                    Path filePath = Paths.get(file);
-                    InputStream stream = Files.newInputStream(filePath);
-                    String result = App.extractContentUsingParser(stream);
+            for(String file : allFiles) {
+                file = "/data" + file;
 
-                    // Save it into Elasticsearch
-                    KysoIndex index = new KysoIndex();
+                KysoIndex index = processFile(file, kysoMap);
+                bulkInsert.add(index);
+            }
 
-                    index.setType("report");
-                    index.setContent(result);
 
-                    String[] fileSplitted = file.split("/");
-                    String organization = fileSplitted[2];
-                    String team = fileSplitted[3];
-                    String report = fileSplitted[5];
-                    String composedLink = "";
-                    String version = fileSplitted[6];
+            System.out.println("------------> Uploading to Elastic " + bulkInsert.size() + " registries");
+            // Save into elastic
+            bulkInsert.forEach(item -> pushContentToElastic(item, elasticUrl));
 
-                    for(int i = 7; i < fileSplitted.length; i++) {
-                        composedLink = composedLink + "/" + fileSplitted[i];
+            // Delete folder
+            deleteFolder(new File(args[1]), allFiles);
+        } else {
+            // reindex
+            System.out.println("Reindexing");
+
+            // First get all organizations folders, which are in the base of the received path
+            File[] allOrganizationsFolders = new File(args[1]).listFiles(File::isDirectory);
+
+            // Process organizations
+            for(File organizationFolder : allOrganizationsFolders) {
+                String organizationSlug = organizationFolder.getName();
+                System.out.println("Processing organization " + organizationSlug);
+
+                // Get all teams folders
+                File[] allTeamsFolders = organizationFolder.listFiles(File::isDirectory);
+
+                // Process team
+                for(File teamFolder : allTeamsFolders) {
+                    String teamSlug = teamFolder.getName();
+                    System.out.println("----> Processing team " + teamSlug);
+                    String reportsAbsolutePath = teamFolder.getAbsolutePath() + "/reports";
+
+                    // Get all the reports of the team
+                    File[] allReportsFolders = new File(reportsAbsolutePath).listFiles(File::isDirectory);
+
+                    for(File reportFolder : allReportsFolders) {
+                        String reportSlug = reportFolder.getName();
+                        System.out.println("--------> Processing report " + reportSlug);
+
+                        // Get all versions of the report, and take the most newer (higher)
+                        File[] allVersionsFolders = reportFolder.listFiles(File::isDirectory);
+
+                        File maxVersion = Arrays.stream(allVersionsFolders).max(Comparator.comparing(File::getName)).orElse(null);
+
+                        System.out.println("------------> Newer version is: " + maxVersion.getName());
+
+                        // Find kyso.yaml,yml,json
+                        File[] allRegularFilesInRootReport = maxVersion.listFiles(File::isFile);
+
+                        Map<String, Object> kysoMap = findKysoYamlOrJson(allRegularFilesInRootReport);
+
+                        // Process all the files, subfolders, subfiles... whatever and process them
+                        List<Path> allFilesOfFolder = Files.walk(Paths.get(maxVersion.getAbsolutePath()))
+                                .filter(Files::isRegularFile)
+                                .toList();
+
+                        List<KysoIndex> bulkInsert = new ArrayList<>();
+
+                        for(Path file : allFilesOfFolder) {
+                            try {
+                                KysoIndex index = processFile(file.toFile().getAbsolutePath(), kysoMap);
+                                bulkInsert.add(index);
+                            } catch(Exception ex) {
+                                System.out.println("Cant process file " + file.toFile().getAbsolutePath());
+                                ex.printStackTrace();
+                            }
+                        }
+
+                        // Save into elastic
+                        System.out.println("------------> Uploading to Elastic " + bulkInsert.size() + " registries");
+                        bulkInsert.forEach(item -> pushContentToElastic(item, elasticUrl));
                     }
 
-                    String finalPath = organization + "/" + team + "/" + report + "?path=" + composedLink.substring(1) + "&version=" + version;
-
-                    String filename = filePath.getFileName().toString();
-                    if(filename.equalsIgnoreCase("kyso.yaml") ||
-                       filename.equalsIgnoreCase("kyso.yml") ||
-                       filename.equalsIgnoreCase("kyso.json")) {
-                        System.out.println("Reading kyso file " + filePath.toString());
-                        kysoMap = readKysoFile(filePath);
-                    }
-
-                    index.setLink(finalPath);
-                    index.setOrganizationSlug(organization);
-                    index.setTeamSlug(team);
-                    index.setEntityId(report);
-
-                    // Open kyso.json, kyso.yaml or kyso.yml and retrieve that information from there if exists
-                    index.setTags("");
-                    index.setPeople("");
-
-                    bulkInsert.add(index);
                 }
-            } catch(TaggedIOException ex) {
-                if(ex.getMessage().contains("a directory")) {
-                    // Is a directory, don't process it
-                } else {
-                    System.out.println(ex.getMessage());
-                    ex.printStackTrace();
-                }
-            } catch(Exception ex) {
-                // Do nothing, just skip that file
+
             }
         }
 
-        Map<String, Object> finalKysoMap = kysoMap;
-        if(kysoMap.containsKey("tags")) {
-            bulkInsert.forEach(item -> item.setTags(finalKysoMap.get("tags").toString()));
-        }
-
-        if(kysoMap.containsKey("authors")) {
-            bulkInsert.forEach(item -> item.setPeople((finalKysoMap.get("authors").toString())));
-        }
-
-        if(kysoMap.containsKey("organization")) {
-            bulkInsert.forEach(item -> item.setOrganizationSlug(finalKysoMap.get("organization").toString()));
-        }
-
-        if(kysoMap.containsKey("team")) {
-            bulkInsert.forEach(item -> item.setTeamSlug(finalKysoMap.get("team").toString()));
-        }
-
-        if(kysoMap.containsKey("title")) {
-            bulkInsert.forEach(item -> item.setTitle(finalKysoMap.get("title").toString()));
-        }
-
-        System.out.println("Uploading to Elastic " + bulkInsert.size() + " registries");
-        // Save into elastic
-        bulkInsert.forEach(item -> pushContentToElastic(item, elasticUrl));
-
-        // Delete folder
-        deleteFiles(new File(args[1]), allFiles);
     }
 
-    public static void deleteFiles(File kysoIndexerFile, List<String> allFiles) {
-        //Executors.newSingleThreadExecutor().submit(() -> {
-            try {
-                // TimeUnit.SECONDS.sleep(30);
-                FileUtils.forceDelete(kysoIndexerFile);
+    public static void deleteFolder(File enclosingFolder, List<String> filesToDelete) {
+        try {
+            FileUtils.forceDelete(enclosingFolder);
+        } catch(Exception ex) {
+            System.out.println("Error deleting enclosing folder");
+            ex.printStackTrace();
+        }
 
-                for (String file : allFiles) {
-                    try {
-                        FileUtils.forceDelete(new File("/data" + file));
-                        System.out.println("Deleted " + "/data" + file);
-                    } catch (Exception ex) {
-                        // silent
-                    }
-                }
-            } catch (Exception ex) {
+        for(String file : filesToDelete) {
+            try {
+                FileUtils.forceDelete(new File("/data" + file));
+                System.out.println("Deleted " + "/data" + file);
+            } catch(Exception ex) {
                 // silent
             }
-        //});
+        }
     }
 
     public static Map<String, Object> readKysoFile(Path kysoFilePath) {
@@ -203,6 +203,113 @@ public class App {
         }
     }
 
+    public static Map<String, Object> findKysoYamlOrJson(File[] allRegularFilesInRootReport) {
+        Map<String, Object> kysoMap = new HashMap<>();
+
+        for(File regularFile : allRegularFilesInRootReport) {
+            if(regularFile.getName().equalsIgnoreCase("kyso.yaml") ||
+                    regularFile.getName().equalsIgnoreCase("kyso.yml") ||
+                    regularFile.getName().equalsIgnoreCase("kyso.json") ) {
+                Path filePath = Paths.get(regularFile.getAbsolutePath());
+
+                System.out.println("------------> Reading kyso file " + filePath.toString());
+                kysoMap = readKysoFile(filePath);
+            }
+        }
+
+        return kysoMap;
+    }
+
+    public static Map<String, Object> findKysoYamlOrJson(List<String> filePaths) {
+        Map<String, Object> kysoMap = new HashMap<>();
+
+        for(String regularFile : filePaths) {
+            if(regularFile.endsWith("kyso.yaml") ||
+               regularFile.endsWith("kyso.yml") ||
+               regularFile.endsWith("kyso.json") ) {
+                Path filePath = Paths.get(regularFile);
+
+                System.out.println("------------> Reading kyso file " + filePath.toString());
+                kysoMap = readKysoFile(filePath);
+            }
+        }
+
+        return kysoMap;
+    }
+
+    public static KysoIndex processFile(String file, Map<String, Object> kysoMap) {
+        KysoIndex index = new KysoIndex();
+
+        try {
+            if(isIgnorable(file)) {
+                // System.out.println("File " + file + " is ignored");
+            } else {
+                System.out.println("------------> Processing file " + file);
+
+                Path filePath = Paths.get(file);
+                InputStream stream = Files.newInputStream(filePath);
+                String result = App.extractContentUsingParser(stream);
+
+                index.setType("report");
+                index.setContent(result);
+
+                String[] fileSplitted = file.split("/");
+                String organization = fileSplitted[2];
+                String team = fileSplitted[3];
+                String report = fileSplitted[5];
+                String composedLink = "";
+                String version = fileSplitted[6];
+
+                for(int i = 7; i < fileSplitted.length; i++) {
+                    composedLink = composedLink + "/" + fileSplitted[i];
+                }
+
+                String finalPath = organization + "/" + team + "/" + report + "?path=" + composedLink.substring(1) + "&version=" + version;
+
+                index.setLink(finalPath);
+                index.setOrganizationSlug(organization);
+                index.setTeamSlug(team);
+                index.setEntityId(report);
+
+                // Open kyso.json, kyso.yaml or kyso.yml and retrieve that information from there if exists
+                index.setTags("");
+                index.setPeople("");
+            }
+        } catch(TaggedIOException ex) {
+            if(ex.getMessage().contains("a directory")) {
+                // Is a directory, don't process it
+            } else {
+                System.out.println(ex.getMessage());
+                ex.printStackTrace();
+            }
+        } catch(Exception ex) {
+            // Do nothing, just skip that file
+        }
+
+        Map<String, Object> finalKysoMap = kysoMap;
+        if(kysoMap.containsKey("tags")) {
+            index.setTags(finalKysoMap.get("tags").toString());
+        }
+
+        if(kysoMap.containsKey("authors")) {
+            index.setPeople((finalKysoMap.get("authors").toString()));
+        }
+
+        if(kysoMap.containsKey("organization")) {
+            index.setOrganizationSlug(finalKysoMap.get("organization").toString());
+        }
+
+        if(kysoMap.containsKey("team")) {
+            index.setTeamSlug(finalKysoMap.get("team").toString());
+        }
+
+        if(kysoMap.containsKey("title")) {
+            index.setTitle(finalKysoMap.get("title").toString());
+        }
+
+        return index;
+    }
+
     public static void pushContentToElastic(KysoIndex data, String elasticUrl) {
         try {
             URI uri = new URI(elasticUrl + "/kyso-index/report");
@@ -219,11 +326,10 @@ public class App {
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-            System.out.println("Uploading to elastic returned: " + response.statusCode());
-            System.out.println(response.body());
+            System.out.println("------------> " + data.getLink() + " upload to elastic returned: " + response.statusCode());
         } catch(Exception ex) {
-            System.out.println("Can't push content to elasticsearch");
-            ex.printStackTrace();
+            System.out.println("------------> " + data.getLink() + " can't push content to elasticsearch");
+            //ex.printStackTrace();
         }
     }
 

@@ -1,0 +1,7 @@
+main: "multiqc_report.html"
+title: "Mapped reads for genomic features (Subread)"
+organization: "darkside"
+team: "public-team"
+description: "Subread featureCounts is a highly efficient general-purpose read summarization program that counts mapped reads for genomic features such as genes, exons, promoter, gene bodies, genomic bins and chromosomal locations.DOI: 10.1093/bioinformatics/btt656."
+importPath: "./"
+tags: ["features", "genomics", "exons"]
