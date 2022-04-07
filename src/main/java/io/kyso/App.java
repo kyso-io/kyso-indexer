@@ -73,12 +73,21 @@ public class App {
             for(String file : allFiles) {
                 file = "/data" + file;
 
-                KysoIndex index = processFile(file, kysoMap);
-                bulkInsert.add(index);
+                try {
+                    String fileAbsolutePath = file;
+                    KysoIndex index = processFile(fileAbsolutePath, kysoMap);
+
+                    if(index != null) {
+                        bulkInsert.add(index);
+                    }
+
+                } catch(Exception ex) {
+                    System.out.println("Cant process file " + file);
+                    ex.printStackTrace();
+                }
             }
 
-
-            System.out.println("------------> Uploading to Elastic " + bulkInsert.size() + " registries");
+            System.out.println("----------------> Uploading to Elastic " + bulkInsert.size() + " registries");
             // Save into elastic
             bulkInsert.forEach(item -> pushContentToElastic(item, elasticUrl));
 
@@ -133,8 +142,13 @@ public class App {
 
                         for(Path file : allFilesOfFolder) {
                             try {
-                                KysoIndex index = processFile(file.toFile().getAbsolutePath(), kysoMap);
-                                bulkInsert.add(index);
+                                String fileAbsolutePath = file.toFile().getAbsolutePath();
+                                KysoIndex index = processFile(fileAbsolutePath, kysoMap);
+
+                                if(index != null) {
+                                    bulkInsert.add(index);
+                                }
+
                             } catch(Exception ex) {
                                 System.out.println("Cant process file " + file.toFile().getAbsolutePath());
                                 ex.printStackTrace();
@@ -142,15 +156,12 @@ public class App {
                         }
 
                         // Save into elastic
-                        System.out.println("------------> Uploading to Elastic " + bulkInsert.size() + " registries");
+                        System.out.println("----------------> Uploading to Elastic " + bulkInsert.size() + " registries");
                         bulkInsert.forEach(item -> pushContentToElastic(item, elasticUrl));
                     }
-
                 }
-
             }
         }
-
     }
 
     public static void deleteFolder(File enclosingFolder, List<String> filesToDelete) {
@@ -243,6 +254,7 @@ public class App {
         try {
             if(isIgnorable(file)) {
                 // System.out.println("File " + file + " is ignored");
+                return null;
             } else {
                 System.out.println("------------> Processing file " + file);
 
@@ -293,6 +305,7 @@ public class App {
             }
         } catch(Exception ex) {
             // Do nothing, just skip that file
+            ex.printStackTrace();
         }
 
         Map<String, Object> finalKysoMap = kysoMap;
@@ -321,6 +334,13 @@ public class App {
 
     public static void pushContentToElastic(KysoIndex data, String elasticUrl) {
         try {
+            String query = """
+                {
+                    "query": {
+                        
+                    }
+                }
+            """;
             URI uri = new URI(elasticUrl + "/kyso-index/report");
             HttpClient client = HttpClient.newHttpClient();
 
@@ -335,16 +355,16 @@ public class App {
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-            System.out.println("------------> " + data.getLink() + " upload to elastic returned: " + response.statusCode());
+            System.out.println("--------------------> " + data.getLink() + " upload to elastic returned: " + response.statusCode());
         } catch(Exception ex) {
-            System.out.println("------------> " + data.getLink() + " can't push content to elasticsearch");
-            //ex.printStackTrace();
+            System.out.println("--------------------> " + data.getLink() + " can't push content to elasticsearch");
+            ex.printStackTrace();
         }
     }
 
     public static String extractContentUsingParser(InputStream stream) throws IOException, TikaException, SAXException {
         Parser parser = new AutoDetectParser();
-        ContentHandler handler = new BodyContentHandler();
+        ContentHandler handler = new BodyContentHandler(-1);
         Metadata metadata = new Metadata();
         ParseContext context = new ParseContext();
 
