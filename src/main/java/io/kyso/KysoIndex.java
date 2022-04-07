@@ -10,10 +10,10 @@ public class KysoIndex {
     private String people;
     private String tags;
     private String content;
+    private int version;
+    private String filePath;
 
-    public KysoIndex() {
-
-    }
+    public KysoIndex() { }
 
     public String getType() {
         return type;
@@ -85,5 +85,21 @@ public class KysoIndex {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public int getVersion() {
+        return version;
+    }
+
+    public void setVersion(int version) {
+        this.version = version;
+    }
+
+    public String getFilePath() {
+        return filePath;
+    }
+
+    public void setFilePath(String filePath) {
+        this.filePath = filePath;
     }
 }

@@ -252,6 +252,7 @@ public class App {
 
                 index.setType("report");
                 index.setContent(result);
+                index.setFilePath(file);
 
                 String[] fileSplitted = file.split("/");
                 String organization = fileSplitted[2];
@@ -259,6 +260,13 @@ public class App {
                 String report = fileSplitted[5];
                 String composedLink = "";
                 String version = fileSplitted[6];
+                int intVersion = -1;
+
+                try {
+                    intVersion = Integer.parseInt(version);
+                } catch(Exception ex) {
+                    // silent
+                }
 
                 for(int i = 7; i < fileSplitted.length; i++) {
                     composedLink = composedLink + "/" + fileSplitted[i];
@@ -266,6 +274,7 @@ public class App {
 
                 String finalPath = organization + "/" + team + "/" + report + "?path=" + composedLink.substring(1) + "&version=" + version;
 
+                index.setVersion(intVersion);
                 index.setLink(finalPath);
                 index.setOrganizationSlug(organization);
                 index.setTeamSlug(team);
