@@ -437,7 +437,7 @@ public class App {
 
     public static void pushContentToElastic(KysoIndex data, String elasticUrl) {
         try {
-            // Delete previous results for the same version
+            // Delete previous results for the same version, as we are going to save it again anyways
             deleteCurrentVersionIndex(data, elasticUrl);
 
             URI uri = new URI(elasticUrl + "/kyso-index/report");
