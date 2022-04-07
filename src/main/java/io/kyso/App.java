@@ -3,6 +3,7 @@ package io.kyso;
 import com.esotericsoftware.yamlbeans.YamlReader;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import org.apache.commons.io.FileUtils;
 import org.apache.tika.exception.TikaException;
 import org.apache.tika.io.TaggedIOException;
@@ -332,15 +333,113 @@ public class App {
         return index;
     }
 
-    public static void pushContentToElastic(KysoIndex data, String elasticUrl) {
+    public static void deleteCurrentVersionIndex(KysoIndex data, String elasticUrl) {
         try {
             String query = """
-                {
-                    "query": {
-                        
-                    }
-                }
-            """;
+                        {
+                            "query": {
+                                "bool": {
+                                    "must": [
+                                        {
+                                            "term": {
+                                                "filePath.keyword": "%%FILEPATH%%"
+                                            }
+                                        },
+                                        {
+                                            "term": {
+                                                "version": %%VERSION%%
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                         }
+                    """;
+
+            query = query.replace("%%FILEPATH%%", data.getFilePath())
+                    .replace("%%VERSION%%", String.valueOf(data.getVersion()));
+
+            URI uri = new URI(elasticUrl + "/kyso-index/_delete_by_query");
+            HttpClient client = HttpClient.newHttpClient();
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(uri)
+                    .headers("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(query))
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+            Gson gson = new Gson();
+            JsonObject responseBody = gson.fromJson(response.body(), JsonObject.class);
+            int deleted = responseBody.get("deleted").getAsInt();
+
+            System.out.println("----------------------------> Deleted " + deleted + " older indexes for " + data.getFilePath() );
+
+        } catch(Exception ex) {
+            System.out.println("----------------------------> " + data.getLink() + " error deleting older versions");
+            ex.printStackTrace();
+        }
+    }
+
+    public static boolean existsIndexInElastic(KysoIndex data, String elasticUrl) {
+        try {
+            String query = """
+                        {
+                            "query": {
+                                "bool": {
+                                    "must": [
+                                        {
+                                            "term": {
+                                                "filePath.keyword": "%%FILEPATH%%"
+                                            }
+                                        },
+                                        {
+                                            "term": {
+                                                "version": %%VERSION%%
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                         }
+                    """;
+
+            query = query.replace("%%FILEPATH%%", data.getFilePath())
+                    .replace("%%VERSION%%", String.valueOf(data.getVersion()));
+
+            URI uri = new URI(elasticUrl + "/kyso-index/report/_search");
+            HttpClient client = HttpClient.newHttpClient();
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(uri)
+                    .headers("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(query))
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+            Gson gson = new Gson();
+            JsonObject responseBody = gson.fromJson(response.body(), JsonObject.class);
+            int results = responseBody.get("hits").getAsJsonObject().get("total").getAsJsonObject().get("value").getAsInt();
+
+            if(results > 0) {
+                return true;
+            } else {
+                return false;
+            }
+        } catch(Exception ex) {
+            // System.out.println("--------------------> " + data.getLink() + " can't push content to elasticsearch");
+            // ex.printStackTrace();
+            return false;
+        }
+    }
+
+    public static void pushContentToElastic(KysoIndex data, String elasticUrl) {
+        try {
+            // Delete previous results for the same version
+            deleteCurrentVersionIndex(data, elasticUrl);
+
             URI uri = new URI(elasticUrl + "/kyso-index/report");
             HttpClient client = HttpClient.newHttpClient();
 
