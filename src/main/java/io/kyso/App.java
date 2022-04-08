@@ -127,38 +127,40 @@ public class App {
 
                         File maxVersion = Arrays.stream(allVersionsFolders).max(Comparator.comparing(File::getName)).orElse(null);
 
-                        System.out.println("------------> Newer version is: " + maxVersion.getName());
+                        if(maxVersion != null) {
+                            System.out.println("------------> Newer version is: " + maxVersion.getName());
 
-                        // Find kyso.yaml,yml,json
-                        File[] allRegularFilesInRootReport = maxVersion.listFiles(File::isFile);
+                            // Find kyso.yaml,yml,json
+                            File[] allRegularFilesInRootReport = maxVersion.listFiles(File::isFile);
 
-                        Map<String, Object> kysoMap = findKysoYamlOrJson(allRegularFilesInRootReport);
+                            Map<String, Object> kysoMap = findKysoYamlOrJson(allRegularFilesInRootReport);
 
-                        // Process all the files, subfolders, subfiles... whatever and process them
-                        List<Path> allFilesOfFolder = Files.walk(Paths.get(maxVersion.getAbsolutePath()))
-                                .filter(Files::isRegularFile)
-                                .toList();
+                            // Process all the files, subfolders, subfiles... whatever and process them
+                            List<Path> allFilesOfFolder = Files.walk(Paths.get(maxVersion.getAbsolutePath()))
+                                    .filter(Files::isRegularFile)
+                                    .toList();
 
-                        List<KysoIndex> bulkInsert = new ArrayList<>();
+                            List<KysoIndex> bulkInsert = new ArrayList<>();
 
-                        for(Path file : allFilesOfFolder) {
-                            try {
-                                String fileAbsolutePath = file.toFile().getAbsolutePath();
-                                KysoIndex index = processFile(fileAbsolutePath, kysoMap);
+                            for(Path file : allFilesOfFolder) {
+                                try {
+                                    String fileAbsolutePath = file.toFile().getAbsolutePath();
+                                    KysoIndex index = processFile(fileAbsolutePath, kysoMap);
 
-                                if(index != null) {
-                                    bulkInsert.add(index);
+                                    if(index != null) {
+                                        bulkInsert.add(index);
+                                    }
+
+                                } catch(Exception ex) {
+                                    System.out.println("Cant process file " + file.toFile().getAbsolutePath());
+                                    ex.printStackTrace();
                                 }
-
-                            } catch(Exception ex) {
-                                System.out.println("Cant process file " + file.toFile().getAbsolutePath());
-                                ex.printStackTrace();
                             }
-                        }
 
-                        // Save into elastic
-                        System.out.println("----------------> Uploading to Elastic " + bulkInsert.size() + " registries");
-                        bulkInsert.forEach(item -> pushContentToElastic(item, elasticUrl));
+                            // Save into elastic
+                            System.out.println("----------------> Uploading to Elastic " + bulkInsert.size() + " registries");
+                            bulkInsert.forEach(item -> pushContentToElastic(item, elasticUrl));
+                        }
                     }
                 }
             }
@@ -265,7 +267,6 @@ public class App {
 
                 index.setType("report");
                 index.setContent(result);
-                index.setFilePath(file);
 
                 String[] fileSplitted = file.split("/");
                 String organization = fileSplitted[2];
@@ -286,6 +287,8 @@ public class App {
                 }
 
                 String finalPath = organization + "/" + team + "/" + report + "?path=" + composedLink.substring(1) + "&version=" + version;
+
+                index.setFilePath(composedLink.substring(1));
 
                 index.setVersion(intVersion);
                 index.setLink(finalPath);
@@ -342,6 +345,21 @@ public class App {
                                     "must": [
                                         {
                                             "term": {
+                                                "organizationSlug.keyword": "%%ORGANIZATION%%"
+                                            }
+                                        },
+                                        {
+                                            "term": {
+                                                "teamSlug.keyword": "%%TEAM%%"
+                                            }
+                                        },
+                                        {
+                                            "term": {
+                                                "entityId.keyword": "%%ENTITY%%"
+                                            }
+                                        },
+                                        {
+                                            "term": {
                                                 "filePath.keyword": "%%FILEPATH%%"
                                             }
                                         },
@@ -357,7 +375,10 @@ public class App {
                     """;
 
             query = query.replace("%%FILEPATH%%", data.getFilePath())
-                    .replace("%%VERSION%%", String.valueOf(data.getVersion()));
+                    .replace("%%VERSION%%", String.valueOf(data.getVersion()))
+                    .replace("%%TEAM%%", data.getTeamSlug())
+                    .replace("%%ORGANIZATION%%", data.getOrganizationSlug())
+                    .replace("%%ENTITY%%", data.getEntityId());
 
             URI uri = new URI(elasticUrl + "/kyso-index/_delete_by_query");
             HttpClient client = HttpClient.newHttpClient();
@@ -391,6 +412,21 @@ public class App {
                                     "must": [
                                         {
                                             "term": {
+                                                "organizationSlug.keyword": "%%ORGANIZATION%%"
+                                            }
+                                        },
+                                        {
+                                            "term": {
+                                                "teamSlug.keyword": "%%TEAM%%"
+                                            }
+                                        },
+                                        {
+                                            "term": {
+                                                "entityId.keyword": "%%ENTITY%%"
+                                            }
+                                        },
+                                        {
+                                            "term": {
                                                 "filePath.keyword": "%%FILEPATH%%"
                                             }
                                         },
@@ -406,7 +442,10 @@ public class App {
                     """;
 
             query = query.replace("%%FILEPATH%%", data.getFilePath())
-                    .replace("%%VERSION%%", String.valueOf(data.getVersion()));
+                    .replace("%%VERSION%%", String.valueOf(data.getVersion()))
+                    .replace("%%TEAM%%", data.getTeamSlug())
+                    .replace("%%ORGANIZATION%%", data.getOrganizationSlug())
+                    .replace("%%ENTITY%%", data.getEntityId());
 
             URI uri = new URI(elasticUrl + "/kyso-index/report/_search");
             HttpClient client = HttpClient.newHttpClient();

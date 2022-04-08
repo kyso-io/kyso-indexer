@@ -1,0 +1,8 @@
+{
+    "main": "Kronig-Penney.ipynb",
+    "title": "Kronig Penney simulation",
+    "organization": "darkside",
+    "team": "public-team",
+    "description": "Energies of an electron in a one-dimensional periodic potential.",
+    "importPath": "./"
+}
