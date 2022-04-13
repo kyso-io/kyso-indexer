@@ -12,7 +12,6 @@ import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.Parser;
 import org.apache.tika.sax.BodyContentHandler;
-import org.json.simple.parser.ParseException;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 
@@ -26,7 +25,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.stream.Collectors;
 
 // Command to watch files and run the process
 // fswatch -e ".*" -i ".*/[^.]*\\.indexer$" --event Created . | xargs -I '{}' java -jar target/kyso-indexer-jar-with-dependencies.jar http://localhost:9200 {}
@@ -67,6 +65,13 @@ public class App {
         if(mode.equalsIgnoreCase("index")) {
             // We receive a file with paths, so every line is a file to be processed
             List<String> allFiles = Files.readAllLines(path);
+
+            String[] fileSplitted = allFiles.get(0).split("/");
+            String organization = fileSplitted[2];
+            String team = fileSplitted[3];
+            String report = fileSplitted[5];
+            String version = fileSplitted[6];
+
             List<KysoIndex> bulkInsert = new ArrayList<>();
 
             Map<String, Object> kysoMap = findKysoYamlOrJson(allFiles);
@@ -76,7 +81,7 @@ public class App {
 
                 try {
                     String fileAbsolutePath = file;
-                    KysoIndex index = processFile(fileAbsolutePath, kysoMap);
+                    KysoIndex index = processFile(fileAbsolutePath, organization, team, report, version, kysoMap);
 
                     if(index != null) {
                         bulkInsert.add(index);
@@ -87,6 +92,9 @@ public class App {
                     ex.printStackTrace();
                 }
             }
+
+            KysoIndex metadataIndex = buildMetadataIndex(organization, team, report, version, kysoMap);
+            bulkInsert.add(metadataIndex);
 
             System.out.println("----------------> Uploading to Elastic " + bulkInsert.size() + " registries");
             // Save into elastic
@@ -145,7 +153,7 @@ public class App {
                             for(Path file : allFilesOfFolder) {
                                 try {
                                     String fileAbsolutePath = file.toFile().getAbsolutePath();
-                                    KysoIndex index = processFile(fileAbsolutePath, kysoMap);
+                                    KysoIndex index = processFile(fileAbsolutePath, organizationSlug, teamSlug, reportSlug, maxVersion.getName(), kysoMap);
 
                                     if(index != null) {
                                         bulkInsert.add(index);
@@ -156,6 +164,9 @@ public class App {
                                     ex.printStackTrace();
                                 }
                             }
+
+                            KysoIndex metadataIndex = buildMetadataIndex(organizationSlug, teamSlug, reportSlug, maxVersion.getName(), kysoMap);
+                            bulkInsert.add(metadataIndex);
 
                             // Save into elastic
                             System.out.println("----------------> Uploading to Elastic " + bulkInsert.size() + " registries");
@@ -251,7 +262,7 @@ public class App {
         return kysoMap;
     }
 
-    public static KysoIndex processFile(String file, Map<String, Object> kysoMap) {
+    public static KysoIndex processFile(String file, String organization, String team, String report, String version, Map<String, Object> kysoMap) {
         KysoIndex index = new KysoIndex();
 
         try {
@@ -269,11 +280,8 @@ public class App {
                 index.setContent(result);
 
                 String[] fileSplitted = file.split("/");
-                String organization = fileSplitted[2];
-                String team = fileSplitted[3];
-                String report = fileSplitted[5];
                 String composedLink = "";
-                String version = fileSplitted[6];
+
                 int intVersion = -1;
 
                 try {
@@ -336,6 +344,38 @@ public class App {
         return index;
     }
 
+    public static KysoIndex buildMetadataIndex(String organization, String team, String report, String version, Map<String, Object> kysoMap) {
+        // Index title, description and tags
+        KysoIndex metadataIndex = new KysoIndex();
+
+        metadataIndex.setVersion(Integer.parseInt(version));
+        metadataIndex.setFilePath("");
+        metadataIndex.setPeople("");
+        metadataIndex.setLink(organization + "/" + team + "/" + report);
+        metadataIndex.setTeamSlug(team);
+        metadataIndex.setOrganizationSlug(organization);
+        metadataIndex.setEntityId(report);
+        metadataIndex.setType("report");
+
+        String title = kysoMap.get("title") != null ? kysoMap.get("title").toString() : "";
+        metadataIndex.setTitle(title);
+        String description = kysoMap.get("description") != null ? kysoMap.get("description").toString() : "";
+        String tags = kysoMap.get("tags") != null ? kysoMap.get("tags").toString() : "";
+        metadataIndex.setTags(tags);
+        String content = """
+            %%TITLE%%
+            
+            %%DESCRIPTION%%
+            
+            %%TAGS%%       
+            """.replace("%%%TITLE%%%", title)
+                .replace("%%%DESCRIPTION%%%", description)
+                .replace("%%%TAGS%%%", tags);
+
+        metadataIndex.setContent(content);
+
+        return metadataIndex;
+    }
     public static void deleteCurrentVersionIndex(KysoIndex data, String elasticUrl) {
         try {
             String query = """
