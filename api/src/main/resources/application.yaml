@@ -9,11 +9,14 @@ quarkus:
 
 # https://www.freeformatter.com/cron-expression-generator-quartz.html
 cron:
+  # Every 30 seconds
   expr: "*/30 * * * * ?"
 
 app:
   indexer:
+    # Elasticsearch url to store the indexed results. Must be opened for unauthenticated users
     elasticsearch: "http://localhost:9200"
+    # Filepath in which the .indexer files are placed by the API. Must have adequate rights for creation,edition and deletion
     filepath: "/indexer-tmp"
     # Base path of the SCS. For example, if the content is at /data/lightside/protected-team/reports/multiq-report/1/ the base path is /data
     # The folder in which the organizations are placed basically
