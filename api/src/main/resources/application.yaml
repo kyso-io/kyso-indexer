@@ -1,0 +1,20 @@
+quarkus:
+  smallrye-openapi:
+    info-title: "Kyso Indexer API"
+    info-version: "1.0.0"
+  swagger-ui:
+    always-include: true
+  http:
+    port: 8080
+
+# https://www.freeformatter.com/cron-expression-generator-quartz.html
+cron:
+  expr: "*/30 * * * * ?"
+
+app:
+  indexer:
+    elasticsearch: "http://localhost:9200"
+    filepath: "/indexer-tmp"
+    # Base path of the SCS. For example, if the content is at /data/lightside/protected-team/reports/multiq-report/1/ the base path is /data
+    # The folder in which the organizations are placed basically
+    scsBasePath: "/data"

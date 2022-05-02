@@ -3,6 +3,7 @@ package io.kyso.api;
 import io.kyso.App;
 import io.quarkus.logging.Log;
 import io.quarkus.scheduler.Scheduled;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import javax.enterprise.context.ApplicationScoped;
 
@@ -19,16 +20,25 @@ import java.util.stream.Stream;
 public class TaskSchedulerBean {
     private AtomicBoolean isExecuting = new AtomicBoolean(false);
 
-    @Scheduled(every = "1s")
+    @ConfigProperty(name = "app.indexer.filepath", defaultValue = "/indexer-data")
+    private String filePath;
+
+
+    @Scheduled(cron = "{cron.expr}")
     void indexPending() {
+        Log.info("Starting indexing process");
+
         if(this.isExecuting.get()) {
             Log.warn("Process is being executed");
+            return;
         }
 
         this.isExecuting.set(true);
 
         try {
-            List<String> files = findFiles(Paths.get(IndexerApi.FILE_PATH), "indexer");
+            List<String> files = findFiles(Paths.get(this.filePath), "indexer");
+
+            Log.info("There are " + files.size() + " files pending to process");
 
             for(String file : files) {
                 try {

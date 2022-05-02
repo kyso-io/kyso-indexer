@@ -2,6 +2,7 @@ package io.kyso.api;
 
 import io.kyso.App;
 import io.quarkus.logging.Log;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
@@ -15,20 +16,19 @@ import java.util.Date;
 
 @Path("/api")
 public class IndexerApi {
-    public static final String FILE_PATH = "/indexer-tmp";
-    @GET
-    @Produces(MediaType.TEXT_PLAIN)
-    @Path("/hello")
-    public String hello() {
-        return "Hello from RESTEasy Reactive";
-    }
+    @ConfigProperty(name = "app.indexer.filepath", defaultValue = "/indexer-tmp")
+    String filePath;
 
+    @ConfigProperty(name = "app.indexer.elasticsearch", defaultValue = "http://localhost:9200")
+    String elasticsearchUrl;
+
+    @ConfigProperty(name = "app.indexer.scsBasePath", defaultValue = "/data")
+    String scsBasePath;
 
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     @Path("/index")
-    public String index(@QueryParam("elasticUrl") String elasticUrl,
-                        @QueryParam("pathToIndex") String pathToIndex) {
+    public String index(@QueryParam("pathToIndex") String pathToIndex) {
         try {
             // Save file to process later
             Date currentDate = new Date();
@@ -36,8 +36,13 @@ public class IndexerApi {
             String fileName = format.format(currentDate);
             fileName = fileName + ".indexer";
 
-            Files.writeString(Paths.get(FILE_PATH, fileName), elasticUrl + "###" + pathToIndex, StandardOpenOption.CREATE_NEW);
-            return "";
+            Files.writeString(
+                Paths.get(this.filePath, fileName),
+                this.elasticsearchUrl + "###" + this.scsBasePath + "/" + pathToIndex,
+                StandardOpenOption.CREATE_NEW
+            );
+
+            return "queued";
         } catch(Exception ex) {
             Log.error("Error", ex);
             throw new InternalServerErrorException(ex.getMessage());
@@ -47,14 +52,13 @@ public class IndexerApi {
     @GET
     @Produces(MediaType.TEXT_PLAIN)
     @Path("/reindex")
-    public String reindex(@QueryParam("elasticUrl") String elasticUrl,
-                        @QueryParam("pathToIndex") String pathToIndex) {
+    public String reindex(@QueryParam("pathToIndex") String pathToIndex) {
         try {
-            String[] args = {elasticUrl, pathToIndex, "--reindex"};
+            String[] args = {this.elasticsearchUrl, pathToIndex, "--reindex"};
 
             App.main(args);
 
-            return "";
+            return "queued";
         } catch(Exception ex) {
             Log.error("Error", ex);
             throw new InternalServerErrorException(ex.getMessage());
