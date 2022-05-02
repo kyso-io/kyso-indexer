@@ -1,7 +1,7 @@
 quarkus:
   smallrye-openapi:
     info-title: "Kyso Indexer API"
-    info-version: "1.0.0"
+    info-version: "2.0.0"
   swagger-ui:
     always-include: true
   http:
