@@ -16,26 +16,19 @@ COPY ./pom.xml ./
 COPY ./api/mvnw ./
 COPY ./api/ ./api/
 COPY ./indexer/ ./indexer/
-RUN echo "mkdir ./indexer/target removed" &&\
+RUN mkdir ./indexer/target &&\
  mv ./indexer-dependency ./indexer/target/dependency &&\
  ./mvnw install && ./mvnw package -Pnative
 
 ## Stage 2 : create the docker final image
-FROM registry.access.redhat.com/ubi8/openjdk-17:1.11
-
-COPY --from=compiler /code/api/target/quarkus-app/lib /work/lib
-COPY --from=compiler /code/api/target/quarkus-app/*.jar /work
-COPY --from=compiler /code/api/target/quarkus-app/app /work/app
-COPY --from=compiler /code/api/target/quarkus-app/quarkus /work/quarkus
-
-USER root
+FROM quay.io/quarkus/quarkus-micro-image:1.0
+COPY --from=compiler /code/api/target/*-runner /work/kyso-indexer
 # set up permissions for user `1001`
-RUN echo "setting permissions" \
+RUN chmod 775 /work /work/kyso-indexer \
   && chown -R 1001 /work \
   && chmod -R "g+rwX" /work \
   && chown -R 1001:root /work
-
 WORKDIR /work
 EXPOSE 8080
 USER 1001
-CMD ["java", "-jar", "quarkus-run.jar", "-Dquarkus.http.host=0.0.0.0"]
+CMD ["./kyso-indexer", "-Dquarkus.http.host=0.0.0.0"]
