@@ -16,7 +16,7 @@ COPY ./pom.xml ./
 COPY ./api/mvnw ./
 COPY ./api/ ./api/
 COPY ./indexer/ ./indexer/
-RUN echo "mkdir ./indexer/target removed" &&\
+RUN echo mkdir ./indexer/target &&\
  mv ./indexer-dependency ./indexer/target/dependency &&\
  ./mvnw install && ./mvnw package -Pnative
 
