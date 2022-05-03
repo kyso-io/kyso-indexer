@@ -264,7 +264,10 @@ public class Indexer {
                 return;
             } else {
                 System.out.println("Debugger: data");
-                System.out.println(data);
+                System.out.println("Version " + data.getVersion());
+                System.out.println("Team " + data.getTeamSlug());
+                System.out.println("Organization " + data.getOrganizationSlug());
+                System.out.println("EntityId " + data.getEntityId());
             }
 
             if(elasticUrl == null) {
