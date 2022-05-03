@@ -40,7 +40,7 @@ public class App {
             }
 
             String[] fileSplitted = allFiles.get(0).toAbsolutePath().toString().split("/");
-            System.out.println(fileSplitted);
+            System.out.println(String.join(",", fileSplitted));
 
             String organization = fileSplitted[4];
             String team = fileSplitted[5];
