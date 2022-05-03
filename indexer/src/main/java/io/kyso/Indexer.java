@@ -421,10 +421,6 @@ public class Indexer {
             deleteCurrentVersionIndex(data, elasticUrl);
 
             Gson gson = new Gson();
-            String contentJson = gson.toJson(data);
-
-            System.out.println("Insert content");
-            System.out.println(contentJson);
 
             URI uri = new URI(elasticUrl + "/kyso-index/report");
             HttpClient client = HttpClient.newHttpClient();
