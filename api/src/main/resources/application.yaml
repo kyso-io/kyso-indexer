@@ -20,4 +20,4 @@ app:
     filepath: "/indexer-tmp"
     # Base path of the SCS. For example, if the content is at /data/lightside/protected-team/reports/multiq-report/1/ the base path is /data
     # The folder in which the organizations are placed basically
-    scsBasePath: "/data"
+    scsBasePath: "/sftp/data/scs"

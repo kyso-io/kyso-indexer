@@ -40,10 +40,10 @@ public class App {
             }
 
             String[] fileSplitted = allFiles.get(0).toAbsolutePath().toString().split("/");
-            String organization = fileSplitted[2];
-            String team = fileSplitted[3];
-            String report = fileSplitted[5];
-            String version = fileSplitted[6];
+            String organization = fileSplitted[4];
+            String team = fileSplitted[5];
+            String report = fileSplitted[7];
+            String version = fileSplitted[8];
 
             List<KysoIndex> bulkInsert = new ArrayList<>();
 
