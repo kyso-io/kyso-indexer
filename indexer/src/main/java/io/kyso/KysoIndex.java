@@ -102,4 +102,21 @@ public class KysoIndex {
     public void setFilePath(String filePath) {
         this.filePath = filePath;
     }
+
+    @Override
+    public String toString() {
+        return "KysoIndex{" +
+                "title='" + title != null ? title : "null" + '\'' +
+                ", type='" + type != null ? type : "null" + '\'' +
+                ", entityId='" + entityId != null ? entityId : "null" + '\'' +
+                ", link='" + link != null ? link : "null" + '\'' +
+                ", organizationSlug='" + organizationSlug != null ? organizationSlug : "null" + '\'' +
+                ", teamSlug='" + teamSlug != null ? teamSlug : "null" + '\'' +
+                ", people='" + people != null ? people : "null" + '\'' +
+                ", tags='" + tags != null ? tags : "null" + '\'' +
+                ", content='" + content != null ? "content" : "null" + '\'' +
+                ", version=" + version != null ? "version" : "null" +
+                ", filePath='" + filePath != null ? filePath : "null" + '\'' +
+                '}';
+    }
 }

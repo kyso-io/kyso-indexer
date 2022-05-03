@@ -259,6 +259,22 @@ public class Indexer {
 
     public static void deleteCurrentVersionIndex(KysoIndex data, String elasticUrl) {
         try {
+            if(data == null) {
+                System.out.println("Data is null. Skipping deleteCurrentVersionIndex");
+                return;
+            } else {
+                System.out.println("Debugger: data");
+                System.out.println(data);
+            }
+
+            if(elasticUrl == null) {
+                System.out.println("elasticUrl is null. Skipping deleteCurrentVersionIndex");
+                return;
+            } else {
+                System.out.println("Debugger: elasticUrl");
+                System.out.println(elasticUrl);
+            }
+
             String query = """
                         {
                             "query": {
