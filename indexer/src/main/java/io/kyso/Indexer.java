@@ -443,14 +443,21 @@ public class Indexer {
     }
 
     public static String extractContentUsingParser(InputStream stream) throws IOException, TikaException, SAXException {
-        Parser parser = new AutoDetectParser();
-        ContentHandler handler = new BodyContentHandler(-1);
-        Metadata metadata = new Metadata();
-        ParseContext context = new ParseContext();
+        try {
+            Parser parser = new AutoDetectParser();
+            ContentHandler handler = new BodyContentHandler(-1);
+            Metadata metadata = new Metadata();
+            ParseContext context = new ParseContext();
 
-        parser.parse(stream, handler, metadata, context);
-        String trimmedContent = handler.toString().trim().replaceAll("\\s+", " ");
+            parser.parse(stream, handler, metadata, context);
+            String trimmedContent = handler.toString().trim().replaceAll("\\s+", " ");
 
-        return trimmedContent;
+            return trimmedContent;
+        } catch(Exception ex) {
+            System.out.println("Can't extract content from that input stream");
+            System.out.println(ex.getMessage());
+            return "";
+        }
+
     }
 }

@@ -73,7 +73,9 @@ public class App {
 
             System.out.println("----------------> Uploading to Elastic " + bulkInsert.size() + " registries");
             // Save into elastic
-            bulkInsert.forEach(item -> Indexer.pushContentToElastic(item, elasticUrl));
+            for (KysoIndex item : bulkInsert) {
+                Indexer.pushContentToElastic(item, elasticUrl);
+            }
 
             // Delete folder - now is not needed
             // Indexer.deleteFolder(new File(args[1]), allFiles);
@@ -145,7 +147,9 @@ public class App {
 
                             // Save into elastic
                             System.out.println("----------------> Uploading to Elastic " + bulkInsert.size() + " registries");
-                            bulkInsert.forEach(item -> Indexer.pushContentToElastic(item, elasticUrl));
+                            for (KysoIndex item : bulkInsert) {
+                                Indexer.pushContentToElastic(item, elasticUrl);
+                            }
                         }
                     }
                 }
