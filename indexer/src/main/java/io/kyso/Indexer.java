@@ -460,6 +460,7 @@ public class Indexer {
         } catch(Exception ex) {
             System.out.println("Can't extract content from that input stream");
             System.out.println(ex.getMessage());
+            ex.printStackTrace();
             return "";
         }
 
