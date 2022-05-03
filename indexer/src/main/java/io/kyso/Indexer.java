@@ -144,7 +144,6 @@ public class Indexer {
 
     public static KysoIndex processFile(String file, String organization, String team, String report, String version, Map<String, Object> kysoMap) {
         KysoIndex index = new KysoIndex();
-        System.out.println("KKA: " + report);
         try {
             if(isIgnorable(file)) {
                 // System.out.println("File " + file + " is ignored");
@@ -174,7 +173,7 @@ public class Indexer {
                     // silent
                 }
 
-                for(int i = 7; i < fileSplitted.length; i++) {
+                for(int i = 9; i < fileSplitted.length; i++) {
                     composedLink = composedLink + "/" + fileSplitted[i];
                 }
 
@@ -186,7 +185,6 @@ public class Indexer {
                 index.setLink(finalPath);
                 index.setOrganizationSlug(organization);
                 index.setTeamSlug(team);
-                System.out.println("KKA2: " + report);
                 index.setEntityId(report);
 
                 // Open kyso.json, kyso.yaml or kyso.yml and retrieve that information from there if exists
