@@ -52,7 +52,7 @@ public class TaskSchedulerBean {
 
                     Files.delete(Paths.get(file));
                 } catch(Exception ex) {
-                    Log.error("Error processing file " + file, ex);
+                    Log.error("Error processingF file " + file, ex);
                 }
             }
 

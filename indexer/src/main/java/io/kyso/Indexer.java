@@ -244,11 +244,11 @@ public class Indexer {
         String tags = kysoMap.get("tags") != null ? kysoMap.get("tags").toString() : "";
         metadataIndex.setTags(tags);
         String content = """
-            %%TITLE%%
+            %%%TITLE%%%
             
-            %%DESCRIPTION%%
+            %%%DESCRIPTION%%%
             
-            %%TAGS%%       
+            %%%TAGS%%%       
             """.replace("%%%TITLE%%%", title)
                 .replace("%%%DESCRIPTION%%%", description)
                 .replace("%%%TAGS%%%", tags);
