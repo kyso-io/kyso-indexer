@@ -47,6 +47,8 @@ public class App {
             String report = fileSplitted[7];
             String version = fileSplitted[8];
 
+            System.out.println("fileSplitted[7] " + report);
+
             List<KysoIndex> bulkInsert = new ArrayList<>();
 
             Map<String, Object> kysoMap = Indexer.findKysoYamlOrJsonByPath(allFiles);
