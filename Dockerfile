@@ -7,7 +7,6 @@ COPY ./api/mvnw ./
 COPY ./api/.mvn/ ./.mvn/
 COPY ./api/pom.xml ./api/
 COPY ./indexer/pom.xml ./indexer/
-RUN ./mvnw clean install
 RUN ./mvnw dependency:copy-dependencies -pl indexer\
  -DoutputDirectory=/code/indexer-dependency
 
