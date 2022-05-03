@@ -429,7 +429,6 @@ public class Indexer {
             URI uri = new URI(elasticUrl + "/kyso-index/report");
             HttpClient client = HttpClient.newHttpClient();
 
-            Gson gson = new Gson();
             String indexAsJson = gson.toJson(data);
 
             HttpRequest request = HttpRequest.newBuilder()
