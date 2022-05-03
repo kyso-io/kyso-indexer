@@ -153,6 +153,7 @@ public class Indexer {
                 System.out.println("------------> Processing file " + file);
 
                 Path filePath = Paths.get(file);
+                System.out.println("Stream filePath: " + filePath.toAbsolutePath());
                 InputStream stream = Files.newInputStream(filePath);
                 String result = extractContentUsingParser(stream);
 
