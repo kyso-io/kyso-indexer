@@ -155,7 +155,7 @@ public class Indexer {
                 Path filePath = Paths.get(file);
                 System.out.println("Stream filePath: " + filePath.toAbsolutePath());
 
-                File initialFile = new File(filePath.toAbsolutePath().toString());
+                File initialFile = new File(filePath.toAbsolutePath().toString().trim());
                 InputStream stream = new FileInputStream(initialFile);
 
                 String result = extractContentUsingParser(stream);
