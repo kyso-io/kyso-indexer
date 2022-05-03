@@ -16,9 +16,10 @@ COPY ./pom.xml ./
 COPY ./api/mvnw ./
 COPY ./api/ ./api/
 COPY ./indexer/ ./indexer/
+RUN ./mvnw clean install
 RUN echo mkdir ./indexer/target &&\
  mv ./indexer-dependency ./indexer/target/dependency &&\
- ./mvnw install && ./mvnw package -Pnative
+ ./mvnw install && ./mvnw package
 
 ## Stage 2 : create the docker final image
 FROM registry.access.redhat.com/ubi8/openjdk-17:1.11
