@@ -7,6 +7,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import javax.enterprise.context.ApplicationScoped;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -87,5 +88,18 @@ public class TaskSchedulerBean {
         }
 
         return result;
+    }
+
+    public static long getFolderSize(File folder) {
+        File[] files = folder.listFiles();
+        long length = 0;
+        for (int i = 0; i < files.length; i++) {
+            if (files[i].isFile()) {
+                length += files[i].length();
+            } else {
+                length += getFolderSize(files[i]);
+            }
+        }
+        return length;
     }
 }
