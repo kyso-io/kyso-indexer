@@ -1,5 +1,6 @@
 package io.kyso.api;
 
+import com.google.gson.Gson;
 import io.kyso.App;
 import io.quarkus.logging.Log;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
@@ -74,7 +75,7 @@ public class IndexerApi {
     @GET
     @Path("/storage")
     @Produces(MediaType.APPLICATION_JSON)
-    public OrganizationStorage getOrganizationStorage(@QueryParam("organizationFolderPath") String organizationFolderPath) {
+    public String getOrganizationStorage(@QueryParam("organizationFolderPath") String organizationFolderPath) {
         File organizationDirectory = new File(organizationFolderPath);
         if (!organizationDirectory.exists()) {
             throw new NotFoundException("Organization directory not found");
@@ -105,6 +106,9 @@ public class IndexerApi {
         os.setConsumedSpaceKb((double)accumBytes / 1024);
         os.setConsumedSpaceMb((double)accumBytes / (1024 * 1024));
         os.setConsumedSpaceGb((double)accumBytes / (1024 * 1024 * 1024));
-        return os;
+
+        Gson gson = new Gson();
+
+        return gson.toJson(os);
     }
 }
