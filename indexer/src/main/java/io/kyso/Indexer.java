@@ -1,9 +1,26 @@
 package io.kyso;
 
-import com.esotericsoftware.yamlbeans.YamlReader;
-import com.google.common.reflect.TypeToken;
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.lang.reflect.Type;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.tika.exception.TikaException;
 import org.apache.tika.io.TaggedIOException;
@@ -15,16 +32,10 @@ import org.apache.tika.sax.BodyContentHandler;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 
-import java.io.*;
-import java.lang.reflect.Type;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
+import com.esotericsoftware.yamlbeans.YamlReader;
+import com.google.common.reflect.TypeToken;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
 public class Indexer {
     private static String[] extensionsToIgnore = { "js", "css", "py", "woff", "woff2", "scss", "java", "jpg", "jpeg",
@@ -45,16 +56,16 @@ public class Indexer {
     public static void deleteFolder(File enclosingFolder, List<String> filesToDelete) {
         try {
             FileUtils.forceDelete(enclosingFolder);
-        } catch(Exception ex) {
+        } catch (Exception ex) {
             System.out.println("Error deleting enclosing folder");
             ex.printStackTrace();
         }
 
-        for(String file : filesToDelete) {
+        for (String file : filesToDelete) {
             try {
                 FileUtils.forceDelete(new File("/data" + file));
                 System.out.println("Deleted " + "/data" + file);
-            } catch(Exception ex) {
+            } catch (Exception ex) {
                 // silent
             }
         }
@@ -72,12 +83,13 @@ public class Indexer {
                 YamlReader reader = new YamlReader(new InputStreamReader(stream));
                 Object object = reader.read();
 
-                kyso = (Map)object;
+                kyso = (Map) object;
             } else {
                 // It's a JSON
                 try (Reader reader = new InputStreamReader(stream)) {
-                    //Read JSON file
-                    Type mapType = new TypeToken<Map<String, Object>>(){}.getType();
+                    // Read JSON file
+                    Type mapType = new TypeToken<Map<String, Object>>() {
+                    }.getType();
                     kyso = new Gson().fromJson(reader, mapType);
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -95,10 +107,10 @@ public class Indexer {
     public static Map<String, Object> findKysoYamlOrJson(File[] allRegularFilesInRootReport) {
         Map<String, Object> kysoMap = new HashMap<>();
 
-        for(File regularFile : allRegularFilesInRootReport) {
-            if(regularFile.getName().equalsIgnoreCase("kyso.yaml") ||
+        for (File regularFile : allRegularFilesInRootReport) {
+            if (regularFile.getName().equalsIgnoreCase("kyso.yaml") ||
                     regularFile.getName().equalsIgnoreCase("kyso.yml") ||
-                    regularFile.getName().equalsIgnoreCase("kyso.json") ) {
+                    regularFile.getName().equalsIgnoreCase("kyso.json")) {
                 Path filePath = Paths.get(regularFile.getAbsolutePath());
 
                 System.out.println("------------> Reading kyso file " + filePath.toString());
@@ -112,10 +124,10 @@ public class Indexer {
     public static Map<String, Object> findKysoYamlOrJsonByPath(List<Path> allRegularFilesInRootReport) {
         Map<String, Object> kysoMap = new HashMap<>();
 
-        for(Path regularFile : allRegularFilesInRootReport) {
-            if(regularFile.getFileName().toString().equalsIgnoreCase("kyso.yaml") ||
-               regularFile.getFileName().toString().equalsIgnoreCase("kyso.yml") ||
-               regularFile.getFileName().toString().equalsIgnoreCase("kyso.json") ) {
+        for (Path regularFile : allRegularFilesInRootReport) {
+            if (regularFile.getFileName().toString().equalsIgnoreCase("kyso.yaml") ||
+                    regularFile.getFileName().toString().equalsIgnoreCase("kyso.yml") ||
+                    regularFile.getFileName().toString().equalsIgnoreCase("kyso.json")) {
 
                 System.out.println("------------> Reading kyso file " + regularFile.toAbsolutePath().toString());
                 kysoMap = readKysoFile(regularFile);
@@ -128,10 +140,10 @@ public class Indexer {
     public static Map<String, Object> findKysoYamlOrJson(List<String> filePaths) {
         Map<String, Object> kysoMap = new HashMap<>();
 
-        for(String regularFile : filePaths) {
-            if(regularFile.endsWith("kyso.yaml") ||
+        for (String regularFile : filePaths) {
+            if (regularFile.endsWith("kyso.yaml") ||
                     regularFile.endsWith("kyso.yml") ||
-                    regularFile.endsWith("kyso.json") ) {
+                    regularFile.endsWith("kyso.json")) {
                 Path filePath = Paths.get(regularFile);
 
                 System.out.println("------------> Reading kyso file " + filePath.toString());
@@ -142,13 +154,15 @@ public class Indexer {
         return kysoMap;
     }
 
-    public static KysoIndex processFile(String file, String organization, String team, String report, String version, Map<String, Object> kysoMap) {
+    public static KysoIndex processFile(String basePath, String file, String organizationSlug, Team team, String report, String version,
+            Map<String, Object> kysoMap) {
         KysoIndex index = new KysoIndex();
         try {
-            if(isIgnorable(file)) {
+            if (isIgnorable(file)) {
                 // System.out.println("File " + file + " is ignored");
                 return null;
             } else {
+                System.out.println("------------> Base path " + basePath);
                 System.out.println("------------> Processing file " + file);
 
                 Path filePath = Paths.get(file);
@@ -162,83 +176,83 @@ public class Indexer {
                 index.setType("report");
                 index.setContent(result);
 
-                String[] fileSplitted = file.split("/");
-                String composedLink = "";
+                String filePathStr = file.replace(basePath, "");
+                index.setFilePath(filePathStr);
+                String frontendPath = filePathStr.replace("/" + organizationSlug + "/" + team.getSluglifiedName() + "/reports/" + report + "/" + version + "/", "");
+                String link = "/" + organizationSlug + "/" + team.getSluglifiedName() + "/" + report + "?path=" + frontendPath + "&version=" + version;
+                index.setLink(link);
+                
+                System.out.println("------------> filePathStr " + filePathStr);
+                System.out.println("------------> link " + link);
 
                 int intVersion = -1;
-
                 try {
                     intVersion = Integer.parseInt(version);
-                } catch(Exception ex) {
+                } catch (Exception ex) {
                     // silent
                 }
-
-                for(int i = 9; i < fileSplitted.length; i++) {
-                    composedLink = composedLink + "/" + fileSplitted[i];
-                }
-
-                String finalPath = organization + "/" + team + "/" + report + "?path=" + composedLink.substring(1) + "&version=" + version;
-
-                index.setFilePath(composedLink.substring(1));
-
                 index.setVersion(intVersion);
-                index.setLink(finalPath);
-                index.setOrganizationSlug(organization);
-                index.setTeamSlug(team);
-                index.setEntityId(report);
 
-                // Open kyso.json, kyso.yaml or kyso.yml and retrieve that information from there if exists
+                index.setOrganizationSlug(organizationSlug);
+                index.setTeamSlug(team.getSluglifiedName());
+                index.setEntityId(report);
+                index.setIsPublic(team.isPublic());
+
+                // Open kyso.json, kyso.yaml or kyso.yml and retrieve that information from
+                // there if exists
                 index.setTags("");
                 index.setPeople("");
             }
-        } catch(TaggedIOException ex) {
-            if(ex.getMessage().contains("a directory")) {
+        } catch (TaggedIOException ex) {
+            if (ex.getMessage().contains("a directory")) {
                 // Is a directory, don't process it
             } else {
                 System.out.println(ex.getMessage());
                 ex.printStackTrace();
             }
-        } catch(Exception ex) {
+        } catch (Exception ex) {
             // Do nothing, just skip that file
             ex.printStackTrace();
         }
 
         Map<String, Object> finalKysoMap = kysoMap;
-        if(kysoMap.containsKey("tags")) {
+        if (kysoMap.containsKey("tags")) {
             index.setTags(finalKysoMap.get("tags").toString());
         }
 
-        if(kysoMap.containsKey("authors")) {
+        if (kysoMap.containsKey("authors")) {
             index.setPeople((finalKysoMap.get("authors").toString()));
         }
 
-        if(kysoMap.containsKey("organization")) {
+        if (kysoMap.containsKey("organization")) {
             index.setOrganizationSlug(finalKysoMap.get("organization").toString());
         }
 
-        if(kysoMap.containsKey("team")) {
+        if (kysoMap.containsKey("team")) {
             index.setTeamSlug(finalKysoMap.get("team").toString());
         }
 
-        if(kysoMap.containsKey("title")) {
+        if (kysoMap.containsKey("title")) {
             index.setTitle(finalKysoMap.get("title").toString());
         }
 
         return index;
     }
 
-    public static KysoIndex buildMetadataIndex(String organization, String team, String report, String version, Map<String, Object> kysoMap) {
+    public static KysoIndex buildMetadataIndex(String organization, Team team, String report, String version,
+            Map<String, Object> kysoMap) {
         // Index title, description and tags
         KysoIndex metadataIndex = new KysoIndex();
 
         metadataIndex.setVersion(Integer.parseInt(version));
         metadataIndex.setFilePath("");
         metadataIndex.setPeople("");
-        metadataIndex.setLink(organization + "/" + team + "/" + report);
-        metadataIndex.setTeamSlug(team);
+        metadataIndex.setLink("/" + organization + "/" + team.getSluglifiedName() + "/" + report);
+        metadataIndex.setTeamSlug(team.getSluglifiedName());
         metadataIndex.setOrganizationSlug(organization);
         metadataIndex.setEntityId(report);
         metadataIndex.setType("report");
+        metadataIndex.setIsPublic(team.isPublic());
 
         String title = kysoMap.get("title") != null ? kysoMap.get("title").toString() : "";
         metadataIndex.setTitle(title);
@@ -246,12 +260,12 @@ public class Indexer {
         String tags = kysoMap.get("tags") != null ? kysoMap.get("tags").toString() : "";
         metadataIndex.setTags(tags);
         String content = """
-            %%%TITLE%%%
-            
-            %%%DESCRIPTION%%%
-            
-            %%%TAGS%%%       
-            """.replace("%%%TITLE%%%", title)
+                %%%TITLE%%%
+
+                %%%DESCRIPTION%%%
+
+                %%%TAGS%%%
+                """.replace("%%%TITLE%%%", title)
                 .replace("%%%DESCRIPTION%%%", description)
                 .replace("%%%TAGS%%%", tags);
 
@@ -262,7 +276,7 @@ public class Indexer {
 
     public static void deleteCurrentVersionIndex(KysoIndex data, String elasticUrl) {
         try {
-            if(data == null) {
+            if (data == null) {
                 System.out.println("Data is null. Skipping deleteCurrentVersionIndex");
                 return;
             } else {
@@ -273,7 +287,7 @@ public class Indexer {
                 System.out.println("EntityId " + data.getEntityId());
             }
 
-            if(elasticUrl == null) {
+            if (elasticUrl == null) {
                 System.out.println("elasticUrl is null. Skipping deleteCurrentVersionIndex");
                 return;
             } else {
@@ -338,9 +352,10 @@ public class Indexer {
             JsonObject responseBody = gson.fromJson(response.body(), JsonObject.class);
             int deleted = responseBody.get("deleted").getAsInt();
 
-            System.out.println("----------------------------> Deleted " + deleted + " older indexes for " + data.getFilePath() );
+            System.out.println(
+                    "----------------------------> Deleted " + deleted + " older indexes for " + data.getFilePath());
 
-        } catch(Exception ex) {
+        } catch (Exception ex) {
             System.out.println("----------------------------> " + data.getLink() + " error deleting older versions");
             ex.printStackTrace();
         }
@@ -390,7 +405,7 @@ public class Indexer {
                     .replace("%%ORGANIZATION%%", data.getOrganizationSlug())
                     .replace("%%ENTITY%%", data.getEntityId());
 
-            URI uri = new URI(elasticUrl + "/kyso-index/report/_search");
+            URI uri = new URI(elasticUrl + "/kyso-index/_search");
             HttpClient client = HttpClient.newHttpClient();
 
             HttpRequest request = HttpRequest.newBuilder()
@@ -403,15 +418,17 @@ public class Indexer {
 
             Gson gson = new Gson();
             JsonObject responseBody = gson.fromJson(response.body(), JsonObject.class);
-            int results = responseBody.get("hits").getAsJsonObject().get("total").getAsJsonObject().get("value").getAsInt();
+            int results = responseBody.get("hits").getAsJsonObject().get("total").getAsJsonObject().get("value")
+                    .getAsInt();
 
-            if(results > 0) {
+            if (results > 0) {
                 return true;
             } else {
                 return false;
             }
-        } catch(Exception ex) {
-            // System.out.println("--------------------> " + data.getLink() + " can't push content to elasticsearch");
+        } catch (Exception ex) {
+            // System.out.println("--------------------> " + data.getLink() + " can't push
+            // content to elasticsearch");
             // ex.printStackTrace();
             return false;
         }
@@ -419,12 +436,13 @@ public class Indexer {
 
     public static void pushContentToElastic(KysoIndex data, String elasticUrl) {
         try {
-            // Delete previous results for the same version, as we are going to save it again anyways
+            // Delete previous results for the same version, as we are going to save it
+            // again anyways
             deleteCurrentVersionIndex(data, elasticUrl);
 
             Gson gson = new Gson();
 
-            URI uri = new URI(elasticUrl + "/kyso-index/report");
+            URI uri = new URI(elasticUrl + "/kyso-index/_doc?refresh=true");
             HttpClient client = HttpClient.newHttpClient();
 
             String indexAsJson = gson.toJson(data);
@@ -437,8 +455,9 @@ public class Indexer {
 
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-            System.out.println("--------------------> " + data.getLink() + " upload to elastic returned: " + response.statusCode());
-        } catch(Exception ex) {
+            System.out.println("--------------------> " + data.getLink() + " upload to elastic returned: "
+                    + response.statusCode());
+        } catch (Exception ex) {
             System.out.println("--------------------> " + data.getLink() + " can't push content to elasticsearch");
             ex.printStackTrace();
         }
@@ -455,7 +474,7 @@ public class Indexer {
             String trimmedContent = handler.toString().trim().replaceAll("\\s+", " ");
 
             return trimmedContent;
-        } catch(Exception ex) {
+        } catch (Exception ex) {
             System.out.println("Can't extract content from that input stream");
             System.out.println(ex.getMessage());
             ex.printStackTrace();
