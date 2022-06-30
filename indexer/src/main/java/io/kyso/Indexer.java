@@ -14,6 +14,7 @@ import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -22,8 +23,8 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.TaggedIOException;
 import org.apache.tika.exception.TikaException;
-import org.apache.tika.io.TaggedIOException;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.ParseContext;
@@ -154,8 +155,8 @@ public class Indexer {
         return kysoMap;
     }
 
-    public static KysoIndex processFile(String basePath, String file, String organizationSlug, Team team, String report, String version,
-            Map<String, Object> kysoMap) {
+    public static KysoIndex processFile(String basePath, String file, Organization organization, Team team,
+            Report report, String version, ArrayList<User> users, ArrayList<Tag> tags, Map<String, Object> kysoMap) {
         KysoIndex index = new KysoIndex();
         try {
             if (isIgnorable(file)) {
@@ -178,10 +179,13 @@ public class Indexer {
 
                 String filePathStr = file.replace(basePath, "");
                 index.setFilePath(filePathStr);
-                String frontendPath = filePathStr.replace("/" + organizationSlug + "/" + team.getSluglifiedName() + "/reports/" + report + "/" + version + "/", "");
-                String link = "/" + organizationSlug + "/" + team.getSluglifiedName() + "/" + report + "?path=" + frontendPath + "&version=" + version;
+                String frontendPath = filePathStr.replace("/" + organization.getSluglifiedName() + "/"
+                        + team.getSluglifiedName() + "/reports/" + report.getSluglifiedName() + "/" + version + "/",
+                        "");
+                String link = "/" + organization.getSluglifiedName() + "/" + team.getSluglifiedName() + "/"
+                        + report.getSluglifiedName() + "?path=" + frontendPath + "&version=" + version;
                 index.setLink(link);
-                
+
                 System.out.println("------------> filePathStr " + filePathStr);
                 System.out.println("------------> link " + link);
 
@@ -193,15 +197,31 @@ public class Indexer {
                 }
                 index.setVersion(intVersion);
 
-                index.setOrganizationSlug(organizationSlug);
+                index.setOrganizationSlug(organization.getSluglifiedName());
                 index.setTeamSlug(team.getSluglifiedName());
-                index.setEntityId(report);
+                index.setEntityId(report.getId());
                 index.setIsPublic(team.isPublic());
 
-                // Open kyso.json, kyso.yaml or kyso.yml and retrieve that information from
-                // there if exists
-                index.setTags("");
-                index.setPeople("");
+                String people = "";
+                if (users.size() > 0) {
+                    for (User user : users) {
+                        people += user.getEmail() + " ";
+                    }
+                    people = people.substring(0, people.length() - 1);
+                }
+                index.setPeople(people);
+
+                index.setTitle(report.getTitle());
+
+                String tagsStr = "";
+                if (tags.size() > 0) {
+                    for (Tag tag : tags) {
+                        tagsStr += tag.getName() + " ";
+                    }
+                    tagsStr = tagsStr.substring(0, tagsStr.length() - 1);
+                }
+                index.setTags(tagsStr);
+
             }
         } catch (TaggedIOException ex) {
             if (ex.getMessage().contains("a directory")) {
@@ -215,63 +235,7 @@ public class Indexer {
             ex.printStackTrace();
         }
 
-        Map<String, Object> finalKysoMap = kysoMap;
-        if (kysoMap.containsKey("tags")) {
-            index.setTags(finalKysoMap.get("tags").toString());
-        }
-
-        if (kysoMap.containsKey("authors")) {
-            index.setPeople((finalKysoMap.get("authors").toString()));
-        }
-
-        if (kysoMap.containsKey("organization")) {
-            index.setOrganizationSlug(finalKysoMap.get("organization").toString());
-        }
-
-        if (kysoMap.containsKey("team")) {
-            index.setTeamSlug(finalKysoMap.get("team").toString());
-        }
-
-        if (kysoMap.containsKey("title")) {
-            index.setTitle(finalKysoMap.get("title").toString());
-        }
-
         return index;
-    }
-
-    public static KysoIndex buildMetadataIndex(String organization, Team team, String report, String version,
-            Map<String, Object> kysoMap) {
-        // Index title, description and tags
-        KysoIndex metadataIndex = new KysoIndex();
-
-        metadataIndex.setVersion(Integer.parseInt(version));
-        metadataIndex.setFilePath("");
-        metadataIndex.setPeople("");
-        metadataIndex.setLink("/" + organization + "/" + team.getSluglifiedName() + "/" + report);
-        metadataIndex.setTeamSlug(team.getSluglifiedName());
-        metadataIndex.setOrganizationSlug(organization);
-        metadataIndex.setEntityId(report);
-        metadataIndex.setType("report");
-        metadataIndex.setIsPublic(team.isPublic());
-
-        String title = kysoMap.get("title") != null ? kysoMap.get("title").toString() : "";
-        metadataIndex.setTitle(title);
-        String description = kysoMap.get("description") != null ? kysoMap.get("description").toString() : "";
-        String tags = kysoMap.get("tags") != null ? kysoMap.get("tags").toString() : "";
-        metadataIndex.setTags(tags);
-        String content = """
-                %%%TITLE%%%
-
-                %%%DESCRIPTION%%%
-
-                %%%TAGS%%%
-                """.replace("%%%TITLE%%%", title)
-                .replace("%%%DESCRIPTION%%%", description)
-                .replace("%%%TAGS%%%", tags);
-
-        metadataIndex.setContent(content);
-
-        return metadataIndex;
     }
 
     public static void deleteCurrentVersionIndex(KysoIndex data, String elasticUrl) {

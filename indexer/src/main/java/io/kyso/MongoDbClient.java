@@ -1,5 +1,7 @@
 package io.kyso;
 
+import java.util.ArrayList;
+
 import org.bson.Document;
 
 import com.mongodb.BasicDBObject;
@@ -53,6 +55,53 @@ public class MongoDbClient {
         } else {
             return null;
         }
+    }
+
+    public Report getReportByTeamIdAndReportSlug(String teamId, String reportSlug) {
+        BasicDBObject reportSearchQuery = new BasicDBObject();
+        reportSearchQuery.put("team_id", teamId);
+        reportSearchQuery.put("sluglified_name", reportSlug);
+        FindIterable<Document> cursorReports = this.find("Report", reportSearchQuery);
+        Document reportDocument = cursorReports.first();
+        if (reportDocument != null) {
+            Report report = new Report(reportDocument);
+            return report;
+        } else {
+            return null;
+        }
+    }
+
+    public User getUserByUserId(String userId) {
+        BasicDBObject userSearchQuery = new BasicDBObject();
+        userSearchQuery.put("id", userId);
+        FindIterable<Document> cursorUsers = this.find("User", userSearchQuery);
+        Document userDocument = cursorUsers.first();
+        if (userDocument != null) {
+            User user = new User(userDocument);
+            return user;
+        } else {
+            return null;
+        }
+    }
+
+    public ArrayList<Tag> getTagsGivenEntityId(String entityId) {
+        ArrayList<TagAssign> tagAssignments = new ArrayList<TagAssign>();
+        BasicDBObject tagAssignSearchQuery = new BasicDBObject();
+        tagAssignSearchQuery.put("entity_id", entityId);
+        FindIterable<Document> cursorTagAssignments = this.find("TagAssign", tagAssignSearchQuery);
+        for (Document tagAssignDocument : cursorTagAssignments) {
+            TagAssign tagAssign = new TagAssign(tagAssignDocument);
+            tagAssignments.add(tagAssign);
+        }
+        ArrayList<Tag> tags = new ArrayList<Tag>();
+        BasicDBObject tagSearchQuery = new BasicDBObject();
+        tagSearchQuery.put("id", new BasicDBObject("$in", tagAssignments.stream().map(ta -> ta.getTagId()).toArray()));
+        FindIterable<Document> cursorTags = this.find("Tag", tagSearchQuery);
+        for (Document tagDocument : cursorTags) {
+            Tag tag = new Tag(tagDocument);
+            tags.add(tag);
+        }
+        return tags;
     }
 
 }

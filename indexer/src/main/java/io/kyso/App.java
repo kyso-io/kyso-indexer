@@ -55,11 +55,20 @@ public class App {
 
             String organizationSlug = fileSplitted[0];
             String teamSlug = fileSplitted[1];
-            String report = fileSplitted[2];
+            String reportSlug = fileSplitted[3];
             String version = fileSplitted[4];
+
+            System.out.println("Indexing report: " + organizationSlug + " - " + teamSlug + " - " + reportSlug + " - " + version);
 
             Organization organization = mongoDbClient.getOrganizationByOrganizationSlug(organizationSlug);
             Team team = mongoDbClient.getTeamByOrganizationIdAndTeamSlug(organization.getId(), teamSlug);
+            Report report = mongoDbClient.getReportByTeamIdAndReportSlug(team.getId(), reportSlug);
+            ArrayList<User> users = new ArrayList<User>();
+            for (String userId : report.getAuthorIds()) {
+                User author = mongoDbClient.getUserByUserId(userId);
+                users.add(author);
+            }
+            ArrayList<Tag> tags = mongoDbClient.getTagsGivenEntityId(report.getId());
 
             List<KysoIndex> bulkInsert = new ArrayList<>();
 
@@ -68,8 +77,8 @@ public class App {
             for (Path file : allFiles) {
                 try {
                     String fileAbsolutePath = file.toAbsolutePath().toString();
-                    KysoIndex index = Indexer.processFile(args[1], fileAbsolutePath, organizationSlug, team, report, version,
-                            kysoMap);
+                    KysoIndex index = Indexer.processFile(args[1], fileAbsolutePath, organization, team, report,
+                            version, users, tags, kysoMap);
 
                     if (index != null) {
                         bulkInsert.add(index);
@@ -80,9 +89,6 @@ public class App {
                     ex.printStackTrace();
                 }
             }
-
-            KysoIndex metadataIndex = Indexer.buildMetadataIndex(organizationSlug, team, report, version, kysoMap);
-            bulkInsert.add(metadataIndex);
 
             System.out.println("----------------> Uploading to Elastic " + bulkInsert.size() + " registries");
             // Save into elastic
@@ -104,7 +110,8 @@ public class App {
             for (File organizationFolder : allOrganizationsFolders) {
                 String organizationSlug = organizationFolder.getName();
                 Organization organization = mongoDbClient.getOrganizationByOrganizationSlug(organizationSlug);
-                System.out.println("Processing organization " + organizationSlug);
+                System.out.println(
+                        "Processing organization: " + organization.getId() + " " + organization.getSluglifiedName());
 
                 // Get all teams folders
                 File[] allTeamsFolders = organizationFolder.listFiles(File::isDirectory);
@@ -121,7 +128,16 @@ public class App {
 
                     for (File reportFolder : allReportsFolders) {
                         String reportSlug = reportFolder.getName();
-                        System.out.println("--------> Processing report " + reportSlug);
+                        Report report = mongoDbClient.getReportByTeamIdAndReportSlug(team.getId(), reportSlug);
+                        System.out.println("--------> Processing report: " + report.getId() + " " + reportSlug);
+
+                        ArrayList<User> users = new ArrayList<User>();
+                        for (String userId : report.getAuthorIds()) {
+                            User author = mongoDbClient.getUserByUserId(userId);
+                            users.add(author);
+                        }
+
+                        ArrayList<Tag> tags = mongoDbClient.getTagsGivenEntityId(report.getId());
 
                         // Get all versions of the report, and take the most newer (higher)
                         File[] allVersionsFolders = reportFolder.listFiles(File::isDirectory);
@@ -147,22 +163,16 @@ public class App {
                             for (Path file : allFilesOfFolder) {
                                 try {
                                     String fileAbsolutePath = file.toFile().getAbsolutePath();
-                                    KysoIndex index = Indexer.processFile(args[1], fileAbsolutePath, organizationSlug, team,
-                                            reportSlug, maxVersion.getName(), kysoMap);
-
+                                    KysoIndex index = Indexer.processFile(args[1], fileAbsolutePath, organization, team,
+                                            report, maxVersion.getName(), users, tags, kysoMap);
                                     if (index != null) {
                                         bulkInsert.add(index);
                                     }
-
                                 } catch (Exception ex) {
                                     System.out.println("Cant process file " + file.toFile().getAbsolutePath());
                                     ex.printStackTrace();
                                 }
                             }
-
-                            // KysoIndex metadataIndex = Indexer.buildMetadataIndex(organizationSlug, team, reportSlug,
-                            //         maxVersion.getName(), kysoMap);
-                            // bulkInsert.add(metadataIndex);
 
                             // Save into elastic
                             System.out.println(
@@ -175,7 +185,7 @@ public class App {
                 }
             }
         }
-        
+
         mongoDbClient.closeConnection();
     }
 
