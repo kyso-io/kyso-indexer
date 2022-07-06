@@ -202,26 +202,23 @@ public class Indexer {
                 index.setEntityId(report.getId());
                 index.setIsPublic(team.isPublic());
 
-                String people = "";
+                ArrayList<String> people = new ArrayList<String>();
                 if (users.size() > 0) {
                     for (User user : users) {
-                        people += user.getEmail() + " ";
+                        people.add(user.getEmail());
                     }
-                    people = people.substring(0, people.length() - 1);
                 }
                 index.setPeople(people);
 
                 index.setTitle(report.getTitle());
 
-                String tagsStr = "";
+                ArrayList<String> _tags = new ArrayList<String>();
                 if (tags.size() > 0) {
                     for (Tag tag : tags) {
-                        tagsStr += tag.getName() + " ";
+                        _tags.add(tag.getName());
                     }
-                    tagsStr = tagsStr.substring(0, tagsStr.length() - 1);
                 }
-                index.setTags(tagsStr);
-
+                index.setTags(_tags);
             }
         } catch (TaggedIOException ex) {
             if (ex.getMessage().contains("a directory")) {
