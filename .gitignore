@@ -4,3 +4,5 @@
 /test-file/
 /api/target/
 /indexer/target/
+.vscode
+.idea

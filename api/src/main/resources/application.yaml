@@ -21,3 +21,5 @@ app:
     # Base path of the SCS. For example, if the content is at /data/lightside/protected-team/reports/multiq-report/1/ the base path is /data
     # The folder in which the organizations are placed basically
     scsBasePath: "/sftp/data/scs"
+    # Database connection
+    databaseUri: "mongodb://localhost:27017/kyso"

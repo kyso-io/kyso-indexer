@@ -1,5 +1,7 @@
 package io.kyso;
 
+import java.util.ArrayList;
+
 public class KysoIndex {
     private String title;
     private String type;
@@ -7,11 +9,12 @@ public class KysoIndex {
     private String link;
     private String organizationSlug;
     private String teamSlug;
-    private String people;
-    private String tags;
+    private ArrayList<String> people;
+    private ArrayList<String> tags;
     private String content;
     private int version;
     private String filePath;
+    private boolean isPublic;
 
     public KysoIndex() { }
 
@@ -55,19 +58,19 @@ public class KysoIndex {
         this.teamSlug = teamSlug;
     }
 
-    public String getPeople() {
+    public ArrayList<String> getPeople() {
         return people;
     }
 
-    public void setPeople(String people) {
+    public void setPeople(ArrayList<String> people) {
         this.people = people;
     }
 
-    public String getTags() {
+    public ArrayList<String> getTags() {
         return tags;
     }
 
-    public void setTags(String tags) {
+    public void setTags(ArrayList<String> tags) {
         this.tags = tags;
     }
 
@@ -103,6 +106,14 @@ public class KysoIndex {
         this.filePath = filePath;
     }
 
+    public boolean isPublic() {
+        return isPublic;
+    }
+
+    public void setIsPublic(boolean isPublic) {
+        this.isPublic = isPublic;
+    }
+
     @Override
     public String toString() {
         return "KysoIndex{" +
@@ -112,11 +123,12 @@ public class KysoIndex {
                 ", link='" + link != null ? link : "null" + '\'' +
                 ", organizationSlug='" + organizationSlug != null ? organizationSlug : "null" + '\'' +
                 ", teamSlug='" + teamSlug != null ? teamSlug : "null" + '\'' +
-                ", people='" + people != null ? people : "null" + '\'' +
-                ", tags='" + tags != null ? tags : "null" + '\'' +
+                ", people='" + people != null ? people.toString() : "null" + '\'' +
+                ", tags='" + tags != null ? tags.toString() : "null" + '\'' +
                 ", content='" + content != null ? "content" : "null" + '\'' +
                 ", version=" + version != null ? "version" : "null" +
                 ", filePath='" + filePath != null ? filePath : "null" + '\'' +
+                ", isPublic=" + isPublic != null ? "true" : "false" +
                 '}';
     }
 }

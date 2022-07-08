@@ -24,6 +24,8 @@ public class TaskSchedulerBean {
     @ConfigProperty(name = "app.indexer.filepath", defaultValue = "/indexer-data")
     private String filePath;
 
+    @ConfigProperty(name = "app.indexer.databaseUri", defaultValue = "mongodb://localhost:27017/kyso")
+    String databaseUri;
 
     @Scheduled(cron = "{cron.expr}")
     void indexPending() {
@@ -49,11 +51,11 @@ public class TaskSchedulerBean {
 
                     String[] args = contentFile.split("###");
 
-                    App.main(args);
+                    App.main(args, this.databaseUri);
 
                     Files.delete(Paths.get(file));
                 } catch(Exception ex) {
-                    Log.error("Error processingF file " + file, ex);
+                    Log.error("Error processing file " + file, ex);
                 }
             }
 
