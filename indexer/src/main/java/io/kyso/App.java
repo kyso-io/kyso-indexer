@@ -105,6 +105,11 @@ public class App {
             // First get all organizations folders, which are in the base of the received
             // path
             File[] allOrganizationsFolders = new File(args[1]).listFiles(File::isDirectory);
+            if (allOrganizationsFolders == null) {
+                System.out.println("No organization folders found in path: " + args[1] + ". Stopping process!");
+                mongoDbClient.closeConnection();
+                return;
+            }
 
             // Process organizations
             for (File organizationFolder : allOrganizationsFolders) {
