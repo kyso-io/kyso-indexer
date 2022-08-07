@@ -6,3 +6,4 @@
 /indexer/target/
 .vscode
 .idea
+*.iml
