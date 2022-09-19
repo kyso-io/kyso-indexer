@@ -189,6 +189,12 @@ public class Indexer {
                 System.out.println("------------> filePathStr " + filePathStr);
                 System.out.println("------------> link " + link);
 
+                String fileRefStr = organization.getSluglifiedName() + "/" + team.getSluglifiedName() + "/"
+                        + report.getSluglifiedName() +  "/" + frontendPath;
+                index.setFileRef(fileRefStr);
+
+                System.out.println("------------> fileRefStr " + fileRefStr);
+
                 int intVersion = -1;
                 try {
                     intVersion = Integer.parseInt(version);

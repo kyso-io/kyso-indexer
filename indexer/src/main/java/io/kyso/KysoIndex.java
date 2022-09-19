@@ -14,6 +14,7 @@ public class KysoIndex {
     private String content;
     private int version;
     private String filePath;
+    private String fileRef;
     private boolean isPublic;
 
     public KysoIndex() { }
@@ -106,6 +107,14 @@ public class KysoIndex {
         this.filePath = filePath;
     }
 
+    public String getFileRef() {
+        return fileRef;
+    }
+
+    public void setFileRef(String fileRef) {
+        this.fileRef = fileRef;
+    }
+
     public boolean isPublic() {
         return isPublic;
     }
@@ -128,6 +137,7 @@ public class KysoIndex {
                 ", content='" + content != null ? "content" : "null" + '\'' +
                 ", version=" + version != null ? "version" : "null" +
                 ", filePath='" + filePath != null ? filePath : "null" + '\'' +
+                ", fileRef='" + fileRef != null ? fileRef : "null" + '\'' +
                 ", isPublic=" + isPublic != null ? "true" : "false" +
                 '}';
     }
