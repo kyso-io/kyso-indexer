@@ -23,7 +23,12 @@ public class MongoDbClient {
     }
 
     public void closeConnection() {
-        this.mongoClient.close();
+        try {
+            this.mongoClient.close();
+        } catch(Exception ex) {
+            System.out.println("Error closing MongoDB connection");
+            ex.printStackTrace();
+        }
     }
 
     public FindIterable<Document> find(String collectionName, BasicDBObject searchQuery) {
