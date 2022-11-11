@@ -4,7 +4,7 @@ include:
     file: '/templates/dockerfile-sonarqube-maven-build.yml'
 
 sonarqube-maven-check:
-  image: quay.io/quarkus/ubi-quarkus-native-image:22.0-java17o
+  image: quay.io/quarkus/ubi-quarkus-native-image:22.0-java17
 
 variables:
   CODE_QUALITY_DISABLED: "true"
