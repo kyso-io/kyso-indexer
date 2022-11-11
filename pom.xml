@@ -11,4 +11,7 @@
         <module>indexer</module>
         <module>api</module>
     </modules>
+    <properties>
+      <sonar.qualitygate.wait>true</sonar.qualitygate.wait>
+    </properties>
 </project>
