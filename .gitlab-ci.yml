@@ -1,11 +1,12 @@
 include:
   - project: 'common/gitlab-ci'
     ref: v0.5.0
-    file: '/templates/dockerfile-sonarqube-maven-build.yml'
-
-sonarqube-maven-check:
-  image: quay.io/quarkus/ubi-quarkus-native-image:22.0-java17
+    file: '/templates/dockerfile-build.yml'
+#    file: '/templates/dockerfile-sonarqube-maven-build.yml'
+#
+# sonarqube-maven-check:
+#   image: quay.io/quarkus/ubi-quarkus-native-image:22.0-java17
 
 variables:
   CODE_QUALITY_DISABLED: "true"
-  SONAR_PROJECT_KEY: "kyso-io_kyso-indexer_AYRnkg_MALP5b9a3L7vP"
+#  SONAR_PROJECT_KEY: ""
