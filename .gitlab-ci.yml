@@ -1,7 +1,7 @@
 include:
   - project: 'common/gitlab-ci'
-    ref: v0.4.15
-    file: '/templates/dockerfile-build.yml'
+    ref: v0.5.0
+    file: '/templates/dockerfile-sonarqube-build.yml'
 
 variables:
   CODE_QUALITY_DISABLED: "true"
