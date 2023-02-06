@@ -40,7 +40,7 @@ import com.google.gson.JsonObject;
 
 public class Indexer {
     private static String[] extensionsToIgnore = { "js", "css", "py", "woff", "woff2", "scss", "java", "jpg", "jpeg",
-            "png", "svg", "gif", "eot", "ttf", "pyc" };
+            "png", "svg", "gif", "eot", "ttf", "pyc", "s3url", "ts", "jsx" };
 
     public static boolean isIgnorable(String path) {
         Optional<String> extension = getExtensionByString(path);
