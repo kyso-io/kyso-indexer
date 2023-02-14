@@ -172,25 +172,33 @@ public class Indexer {
                 File initialFile = new File(filePath.toAbsolutePath().toString().trim());
                 InputStream stream = new FileInputStream(initialFile);
 
-                String result = extractContentUsingParser(stream);
-
-                index.setType("report");
-                index.setContent(result);
-
                 String filePathStr = file.replace(basePath, "");
                 index.setFilePath(filePathStr);
                 String frontendPath = filePathStr.replace("/" + organization.getSluglifiedName() + "/"
                         + team.getSluglifiedName() + "/reports/" + report.getSluglifiedName() + "/" + version + "/",
                         "");
-                String link = "/" + organization.getSluglifiedName() + "/" + team.getSluglifiedName() + "/"
-                        + report.getSluglifiedName() + "?path=" + frontendPath + "&version=" + version;
+
+                String result, link;
+                if (file.endsWith("kyso.json") || file.endsWith("kyso.yaml") || file.endsWith("kyso.yml")) {
+                    Map<String, Object> kysoMap2 = readKysoFile(filePath);
+                    result = extractContentKkysoConfigFile(kysoMap2);
+                    link = "/" + organization.getSluglifiedName() + "/" + team.getSluglifiedName() + "/"
+                            + report.getSluglifiedName() + "?version=" + version;
+                } else {
+                    result = extractContentUsingParser(stream);
+                    link = "/" + organization.getSluglifiedName() + "/" + team.getSluglifiedName() + "/"
+                            + report.getSluglifiedName() + "?path=" + frontendPath + "&version=" + version;
+                }
+
+                index.setType("report");
+                index.setContent(result);
                 index.setLink(link);
 
                 System.out.println("------------> filePathStr " + filePathStr);
                 System.out.println("------------> link " + link);
 
                 String fileRefStr = organization.getSluglifiedName() + "/" + team.getSluglifiedName() + "/"
-                        + report.getSluglifiedName() +  "/" + frontendPath;
+                        + report.getSluglifiedName() + "/" + frontendPath;
                 index.setFileRef(fileRefStr);
 
                 System.out.println("------------> fileRefStr " + fileRefStr);
@@ -449,4 +457,43 @@ public class Indexer {
         }
 
     }
+
+    public static String extractContentKkysoConfigFile(Map<String, Object> data) {
+        String text = "";
+        if (data.containsKey("title")) {
+            text += data.get("title").toString() + "\n\n";
+        }
+        if (data.containsKey("description")) {
+            text += data.get("description").toString() + "\n\n";
+        }
+        if (data.containsKey("tags")) {
+            List<String> tags = (List<String>) data.get("tags");
+            if (tags.size() > 0) {
+                for (String tag : tags) {
+                    text += tag + " ";
+                }
+                text += "\n\n";
+            }
+        }
+        if (data.containsKey("authors")) {
+            List<String> authors = (List<String>) data.get("authors");
+            if (authors.size() > 0) {
+                text += "Created by: ";
+                for (int i = 0; i < authors.size(); i++) {
+                    if (i > 0 && i == authors.size() - 1) {
+                        text += "and ";
+                    }
+                    text += authors.get(i) + " ";
+                }
+                text += "in " + data.get("organization").toString();
+                if (data.containsKey("channel")) {
+                    text += " and " + data.get("channel").toString();
+                } else if (data.containsKey("team")) {
+                    text += " and " + data.get("team").toString();
+                }
+            }
+        }
+        return text;
+    }
+
 }
