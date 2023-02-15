@@ -30,13 +30,17 @@ import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.Parser;
 import org.apache.tika.sax.BodyContentHandler;
+import org.jsoup.Jsoup;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
 
 import com.esotericsoftware.yamlbeans.YamlReader;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.vladsch.flexmark.html.HtmlRenderer;
 
 public class Indexer {
     private static String[] extensionsToIgnore = { "js", "css", "py", "woff", "woff2", "scss", "java", "jpg", "jpeg",
@@ -185,7 +189,51 @@ public class Indexer {
                     link = "/" + organization.getSluglifiedName() + "/" + team.getSluglifiedName() + "/"
                             + report.getSluglifiedName() + "?version=" + version;
                 } else {
-                    result = extractContentUsingParser(stream);
+                    if (file.endsWith(".md")) {
+                        String markdownText = new String(Files.readAllBytes(filePath));
+                        result = Indexer.extractTextFromMarkdown(markdownText);
+                    } else if (file.endsWith(".ipynb")) {
+                        result = "";
+                        String data = new String(Files.readAllBytes(filePath));
+                        JsonElement jsonElement = JsonParser.parseString(data);
+                        JsonObject json = jsonElement.getAsJsonObject();
+                        if (!json.has("cells")) {
+                            result = extractContentUsingParser(stream);
+                        } else {
+                            for (JsonElement cell : json.getAsJsonArray("cells")) {
+                                JsonObject cellObj = cell.getAsJsonObject();
+                                if (cellObj.has("cell_type")) {
+                                    String cellType = cellObj.get("cell_type").getAsString();
+                                    if (cellType.equalsIgnoreCase("markdown")) {
+                                        String markdownText = "";
+                                        for (JsonElement source : cellObj.getAsJsonArray("source")) {
+                                            markdownText += source.getAsString();
+                                        }
+                                        result += Indexer.extractTextFromMarkdown(markdownText);
+                                    } else if (cellType.equalsIgnoreCase("code")) {
+                                        for (JsonElement source : cellObj.getAsJsonArray("source")) {
+                                            result += source.getAsString();
+                                        }
+                                        if (cellObj.has("outputs")) {
+                                            for (JsonElement output : cellObj.getAsJsonArray("outputs")) {
+                                                JsonObject outputObj = output.getAsJsonObject();
+                                                if (outputObj.has("data")) {
+                                                    JsonObject dataObj = outputObj.getAsJsonObject("data");
+                                                    if (dataObj.has("text/plain")) {
+                                                        for (JsonElement text : dataObj.getAsJsonArray("text/plain")) {
+                                                            result += text.getAsString();
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        result = extractContentUsingParser(stream);
+                    }
                     link = "/" + organization.getSluglifiedName() + "/" + team.getSluglifiedName() + "/"
                             + report.getSluglifiedName() + "?path=" + frontendPath + "&version=" + version;
                 }
@@ -494,6 +542,13 @@ public class Indexer {
             }
         }
         return text;
+    }
+
+    public static String extractTextFromMarkdown(String markdownText) {
+        com.vladsch.flexmark.parser.Parser parser = com.vladsch.flexmark.parser.Parser.builder().build();
+        HtmlRenderer renderer = HtmlRenderer.builder().build();
+        String html = renderer.render(parser.parse(markdownText.toString()));
+        return Jsoup.parse(html).text();
     }
 
 }
