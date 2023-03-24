@@ -1,6 +1,7 @@
 package io.kyso;
 
 import java.util.ArrayList;
+import java.util.Date;
 
 import org.bson.Document;
 
@@ -11,6 +12,8 @@ public class Report {
     private ArrayList<String> authorIds;
     private String teamId;
     private String title;
+    private Date createdAt;
+    private Date updatedAt;
 
     public Report(Document document) {
         this.setId(document.getString("id"));
@@ -19,6 +22,8 @@ public class Report {
         this.setAuthorIds((ArrayList<String>) document.get("author_ids"));
         this.setTeamId(document.getString("team_id"));
         this.setTitle(document.getString("title"));
+        this.setCreatedAt(document.getDate("created_at"));
+        this.setUpdatedAt(document.getDate("updated_at"));
     }
 
     public String getId() {
@@ -67,6 +72,22 @@ public class Report {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public Date getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Date createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public Date getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(Date updatedAt) {
+        this.updatedAt = updatedAt;
     }
 
 }

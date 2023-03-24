@@ -160,7 +160,9 @@ public class Indexer {
     }
 
     public static KysoIndex processFile(String basePath, String file, Organization organization, Team team,
-            Report report, String version, ArrayList<User> users, ArrayList<Tag> tags, Map<String, Object> kysoMap) {
+            Report report, String version, ArrayList<User> users, ArrayList<Tag> tags, int stars, int numComments,
+            long updatedAt,
+            Map<String, Object> kysoMap) {
         KysoIndex index = new KysoIndex();
         try {
             if (isIgnorable(file)) {
@@ -281,6 +283,10 @@ public class Indexer {
                     }
                 }
                 index.setTags(_tags);
+
+                index.setStars(stars);
+                index.setNumComments(numComments);
+                index.setUpdatedAt(updatedAt);
             }
         } catch (TaggedIOException ex) {
             if (ex.getMessage().contains("a directory")) {

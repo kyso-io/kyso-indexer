@@ -16,6 +16,9 @@ public class KysoIndex {
     private String filePath;
     private String fileRef;
     private boolean isPublic;
+    private int stars;
+    private int numComments;
+    private long updatedAt;
 
     public KysoIndex() { }
 
@@ -123,6 +126,30 @@ public class KysoIndex {
         this.isPublic = isPublic;
     }
 
+    public int getStars() {
+        return stars;
+    }
+
+    public void setStars(int stars) {
+        this.stars = stars;
+    }
+
+    public int getNumComments() {
+        return numComments;
+    }
+
+    public void setNumComments(int numComments) {
+        this.numComments = numComments;
+    }
+
+    public long getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(long updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
     @Override
     public String toString() {
         return "KysoIndex{" +
@@ -139,6 +166,9 @@ public class KysoIndex {
                 ", filePath='" + filePath != null ? filePath : "null" + '\'' +
                 ", fileRef='" + fileRef != null ? fileRef : "null" + '\'' +
                 ", isPublic=" + isPublic != null ? "true" : "false" +
+                ", stars=" + stars != null ? String.valueOf(stars) : "null" +
+                ", numComments=" + numComments != null ? String.valueOf(numComments) : "null" +
+                ", updatedAt=" + updatedAt != null ? String.valueOf(updatedAt) : "null" +
                 '}';
     }
 }

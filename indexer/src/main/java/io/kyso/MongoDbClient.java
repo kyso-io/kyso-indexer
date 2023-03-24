@@ -25,7 +25,7 @@ public class MongoDbClient {
     public void closeConnection() {
         try {
             this.mongoClient.close();
-        } catch(Exception ex) {
+        } catch (Exception ex) {
             System.out.println("Error closing MongoDB connection");
             ex.printStackTrace();
         }
@@ -34,6 +34,11 @@ public class MongoDbClient {
     public FindIterable<Document> find(String collectionName, BasicDBObject searchQuery) {
         MongoCollection<Document> collection = this.database.getCollection(collectionName);
         return collection.find(searchQuery);
+    }
+
+    public int countDocuments(String collectionName, BasicDBObject searchQuery) {
+        MongoCollection<Document> collection = this.database.getCollection(collectionName);
+        return (int) collection.countDocuments(searchQuery);
     }
 
     public Organization getOrganizationByOrganizationSlug(String organizationSlug) {
@@ -107,6 +112,18 @@ public class MongoDbClient {
             tags.add(tag);
         }
         return tags;
+    }
+
+    public int getNumberOfStarsGivenReportId(String reportId) {
+        BasicDBObject starSearchQuery = new BasicDBObject();
+        starSearchQuery.put("report_id", reportId);
+        return this.countDocuments("StarredReport", starSearchQuery);
+    }
+
+    public int getNumberOfCommentsGivenReportId(String reportId) {
+        BasicDBObject commentSearchQuery = new BasicDBObject();
+        commentSearchQuery.put("report_id", reportId);
+        return this.countDocuments("Comment", commentSearchQuery);
     }
 
 }
