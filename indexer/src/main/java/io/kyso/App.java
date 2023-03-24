@@ -68,8 +68,20 @@ public class App {
                         + " - " + version);
 
                 Organization organization = mongoDbClient.getOrganizationByOrganizationSlug(organizationSlug);
+                if (organization == null) {
+                    System.out.println("Organization not found");
+                    return;
+                }
                 Team team = mongoDbClient.getTeamByOrganizationIdAndTeamSlug(organization.getId(), teamSlug);
+                if (team == null) {
+                    System.out.println("Team not found");
+                    return;
+                }
                 Report report = mongoDbClient.getReportByTeamIdAndReportSlug(team.getId(), reportSlug);
+                if (report == null) {
+                    System.out.println("Report not found");
+                    return;
+                }
                 ArrayList<User> users = new ArrayList<User>();
                 for (String userId : report.getAuthorIds()) {
                     User author = mongoDbClient.getUserByUserId(userId);
@@ -125,9 +137,12 @@ public class App {
                 for (File organizationFolder : allOrganizationsFolders) {
                     String organizationSlug = organizationFolder.getName();
                     Organization organization = mongoDbClient.getOrganizationByOrganizationSlug(organizationSlug);
-                    System.out.println(
-                            "Processing organization: " + organization.getId() + " "
-                                    + organization.getSluglifiedName());
+                    if (organization == null) {
+                        System.out.println("Organization not found: " + organizationSlug);
+                        continue;
+                    }
+                    System.out.println("Processing organization: " + organization.getId() + " "
+                            + organization.getSluglifiedName());
 
                     // Get all teams folders
                     File[] allTeamsFolders = organizationFolder.listFiles(File::isDirectory);
@@ -138,6 +153,10 @@ public class App {
                             String teamSlug = teamFolder.getName();
                             Team team = mongoDbClient.getTeamByOrganizationIdAndTeamSlug(organization.getId(),
                                     teamSlug);
+                            if (team == null) {
+                                System.out.println("Team not found: " + teamSlug);
+                                continue;
+                            }
                             System.out.println("----> Processing team " + teamSlug);
                             String reportsAbsolutePath = teamFolder.getAbsolutePath() + "/reports";
 
@@ -149,6 +168,10 @@ public class App {
                                     String reportSlug = reportFolder.getName();
                                     Report report = mongoDbClient.getReportByTeamIdAndReportSlug(team.getId(),
                                             reportSlug);
+                                    if (report == null) {
+                                        System.out.println("Report not found: " + reportSlug);
+                                        continue;
+                                    }
                                     System.out.println(
                                             "--------> Processing report: " + report.getId() + " " + reportSlug);
 
