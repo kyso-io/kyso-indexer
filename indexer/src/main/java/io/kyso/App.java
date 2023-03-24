@@ -4,7 +4,12 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -59,7 +64,8 @@ public class App {
                 String reportSlug = fileSplitted[3];
                 String version = fileSplitted[4];
 
-                System.out.println("Indexing report: " + organizationSlug + " - " + teamSlug + " - " + reportSlug + " - " + version);
+                System.out.println("Indexing report: " + organizationSlug + " - " + teamSlug + " - " + reportSlug
+                        + " - " + version);
 
                 Organization organization = mongoDbClient.getOrganizationByOrganizationSlug(organizationSlug);
                 Team team = mongoDbClient.getTeamByOrganizationIdAndTeamSlug(organization.getId(), teamSlug);
@@ -70,6 +76,9 @@ public class App {
                     users.add(author);
                 }
                 ArrayList<Tag> tags = mongoDbClient.getTagsGivenEntityId(report.getId());
+                int stars = mongoDbClient.getNumberOfStarsGivenReportId(report.getId());
+                int numComments = mongoDbClient.getNumberOfCommentsGivenReportId(report.getId());
+                long updatedAt = report.getUpdatedAt().getTime();
 
                 List<KysoIndex> bulkInsert = new ArrayList<>();
 
@@ -79,7 +88,7 @@ public class App {
                     try {
                         String fileAbsolutePath = file.toAbsolutePath().toString();
                         KysoIndex index = Indexer.processFile(args[1], fileAbsolutePath, organization, team, report,
-                                version, users, tags, kysoMap);
+                                version, users, tags, stars, numComments, updatedAt, kysoMap);
 
                         if (index != null) {
                             bulkInsert.add(index);
@@ -117,7 +126,8 @@ public class App {
                     String organizationSlug = organizationFolder.getName();
                     Organization organization = mongoDbClient.getOrganizationByOrganizationSlug(organizationSlug);
                     System.out.println(
-                            "Processing organization: " + organization.getId() + " " + organization.getSluglifiedName());
+                            "Processing organization: " + organization.getId() + " "
+                                    + organization.getSluglifiedName());
 
                     // Get all teams folders
                     File[] allTeamsFolders = organizationFolder.listFiles(File::isDirectory);
@@ -126,7 +136,8 @@ public class App {
                     for (File teamFolder : allTeamsFolders) {
                         try {
                             String teamSlug = teamFolder.getName();
-                            Team team = mongoDbClient.getTeamByOrganizationIdAndTeamSlug(organization.getId(), teamSlug);
+                            Team team = mongoDbClient.getTeamByOrganizationIdAndTeamSlug(organization.getId(),
+                                    teamSlug);
                             System.out.println("----> Processing team " + teamSlug);
                             String reportsAbsolutePath = teamFolder.getAbsolutePath() + "/reports";
 
@@ -136,8 +147,10 @@ public class App {
                             for (File reportFolder : allReportsFolders) {
                                 try {
                                     String reportSlug = reportFolder.getName();
-                                    Report report = mongoDbClient.getReportByTeamIdAndReportSlug(team.getId(), reportSlug);
-                                    System.out.println("--------> Processing report: " + report.getId() + " " + reportSlug);
+                                    Report report = mongoDbClient.getReportByTeamIdAndReportSlug(team.getId(),
+                                            reportSlug);
+                                    System.out.println(
+                                            "--------> Processing report: " + report.getId() + " " + reportSlug);
 
                                     ArrayList<User> users = new ArrayList<User>();
                                     for (String userId : report.getAuthorIds()) {
@@ -146,11 +159,15 @@ public class App {
                                     }
 
                                     ArrayList<Tag> tags = mongoDbClient.getTagsGivenEntityId(report.getId());
+                                    int stars = mongoDbClient.getNumberOfStarsGivenReportId(report.getId());
+                                    int numComments = mongoDbClient.getNumberOfCommentsGivenReportId(report.getId());
+                                    long updatedAt = report.getUpdatedAt().getTime();
 
                                     // Get all versions of the report, and take the most newer (higher)
                                     File[] allVersionsFolders = reportFolder.listFiles(File::isDirectory);
 
-                                    File maxVersion = Arrays.stream(allVersionsFolders).max(Comparator.comparing(File::getName))
+                                    File maxVersion = Arrays.stream(allVersionsFolders)
+                                            .max(Comparator.comparing(File::getName))
                                             .orElse(null);
 
                                     if (maxVersion != null) {
@@ -159,10 +176,12 @@ public class App {
                                         // Find kyso.yaml,yml,json
                                         File[] allRegularFilesInRootReport = maxVersion.listFiles(File::isFile);
 
-                                        Map<String, Object> kysoMap = Indexer.findKysoYamlOrJson(allRegularFilesInRootReport);
+                                        Map<String, Object> kysoMap = Indexer
+                                                .findKysoYamlOrJson(allRegularFilesInRootReport);
 
                                         // Process all the files, subfolders, subfiles... whatever and process them
-                                        List<Path> allFilesOfFolder = Files.walk(Paths.get(maxVersion.getAbsolutePath()))
+                                        List<Path> allFilesOfFolder = Files
+                                                .walk(Paths.get(maxVersion.getAbsolutePath()))
                                                 .filter(Files::isRegularFile)
                                                 .toList();
 
@@ -171,20 +190,25 @@ public class App {
                                         for (Path file : allFilesOfFolder) {
                                             try {
                                                 String fileAbsolutePath = file.toFile().getAbsolutePath();
-                                                KysoIndex index = Indexer.processFile(args[1], fileAbsolutePath, organization, team,
-                                                        report, maxVersion.getName(), users, tags, kysoMap);
+                                                KysoIndex index = Indexer.processFile(args[1], fileAbsolutePath,
+                                                        organization, team,
+                                                        report, maxVersion.getName(), users, tags, stars, numComments,
+                                                        updatedAt,
+                                                        kysoMap);
                                                 if (index != null) {
                                                     bulkInsert.add(index);
                                                 }
                                             } catch (Exception ex) {
-                                                System.out.println("Cant process file " + file.toFile().getAbsolutePath());
+                                                System.out.println(
+                                                        "Cant process file " + file.toFile().getAbsolutePath());
                                                 ex.printStackTrace();
                                             }
                                         }
 
                                         // Save into elastic
                                         System.out.println(
-                                                "----------------> Uploading to Elastic " + bulkInsert.size() + " registries");
+                                                "----------------> Uploading to Elastic " + bulkInsert.size()
+                                                        + " registries");
                                         for (KysoIndex item : bulkInsert) {
                                             try {
                                                 Indexer.pushContentToElastic(item, elasticUrl);
