@@ -18,6 +18,7 @@ public class KysoIndex {
     private boolean isPublic;
     private int stars;
     private int numComments;
+    private int numTasks;
     private long updatedAt;
 
     public KysoIndex() { }
@@ -142,6 +143,14 @@ public class KysoIndex {
         this.numComments = numComments;
     }
 
+    public int getNumTasks() {
+        return numTasks;
+    }
+
+    public void setNumTasks(int numTasks) {
+        this.numTasks = numTasks;
+    }
+
     public long getUpdatedAt() {
         return updatedAt;
     }
@@ -168,6 +177,7 @@ public class KysoIndex {
                 ", isPublic=" + isPublic != null ? "true" : "false" +
                 ", stars=" + stars != null ? String.valueOf(stars) : "null" +
                 ", numComments=" + numComments != null ? String.valueOf(numComments) : "null" +
+                ", numTasks=" + numTasks != null ? String.valueOf(numTasks) : "null" +
                 ", updatedAt=" + updatedAt != null ? String.valueOf(updatedAt) : "null" +
                 '}';
     }

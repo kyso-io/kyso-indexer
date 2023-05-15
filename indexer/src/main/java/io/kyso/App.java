@@ -90,6 +90,7 @@ public class App {
                 ArrayList<Tag> tags = mongoDbClient.getTagsGivenEntityId(report.getId());
                 int stars = mongoDbClient.getNumberOfStarsGivenReportId(report.getId());
                 int numComments = mongoDbClient.getNumberOfCommentsGivenReportId(report.getId());
+                int numTasks = mongoDbClient.getNumberOfTaskGivenReportId(report.getId(), Integer.parseInt(version));
                 long updatedAt = report.getUpdatedAt().getTime();
 
                 List<KysoIndex> bulkInsert = new ArrayList<>();
@@ -100,7 +101,7 @@ public class App {
                     try {
                         String fileAbsolutePath = file.toAbsolutePath().toString();
                         KysoIndex index = Indexer.processFile(args[1], fileAbsolutePath, organization, team, report,
-                                version, users, tags, stars, numComments, updatedAt, kysoMap);
+                                version, users, tags, stars, numComments, numTasks, updatedAt, kysoMap);
 
                         if (index != null) {
                             bulkInsert.add(index);
@@ -172,6 +173,7 @@ public class App {
                                         System.out.println("Report not found: " + reportSlug);
                                         continue;
                                     }
+                                    int version = mongoDbClient.getLastVersionOfReport(report.getId());
                                     System.out.println(
                                             "--------> Processing report: " + report.getId() + " " + reportSlug);
 
@@ -184,6 +186,8 @@ public class App {
                                     ArrayList<Tag> tags = mongoDbClient.getTagsGivenEntityId(report.getId());
                                     int stars = mongoDbClient.getNumberOfStarsGivenReportId(report.getId());
                                     int numComments = mongoDbClient.getNumberOfCommentsGivenReportId(report.getId());
+                                    int numTasks = mongoDbClient.getNumberOfTaskGivenReportId(report.getId(), version);
+
                                     long updatedAt = report.getUpdatedAt().getTime();
 
                                     // Get all versions of the report, and take the most newer (higher)
@@ -214,10 +218,8 @@ public class App {
                                             try {
                                                 String fileAbsolutePath = file.toFile().getAbsolutePath();
                                                 KysoIndex index = Indexer.processFile(args[1], fileAbsolutePath,
-                                                        organization, team,
-                                                        report, maxVersion.getName(), users, tags, stars, numComments,
-                                                        updatedAt,
-                                                        kysoMap);
+                                                        organization, team, report, maxVersion.getName(), users, tags,
+                                                        stars, numComments, numTasks, updatedAt, kysoMap);
                                                 if (index != null) {
                                                     bulkInsert.add(index);
                                                 }

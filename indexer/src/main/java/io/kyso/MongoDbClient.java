@@ -81,6 +81,19 @@ public class MongoDbClient {
         }
     }
 
+    public int getLastVersionOfReport(String reportId) {
+        BasicDBObject reportSearchQuery = new BasicDBObject();
+        reportSearchQuery.put("report_id", reportId);
+        BasicDBObject sortQuery = new BasicDBObject();
+        sortQuery.put("version", -1);
+        FindIterable<Document> cursorReports = this.find("File", reportSearchQuery).sort(sortQuery).limit(1);
+        Document reportDocument = cursorReports.first();
+        if (reportDocument != null) {
+            return reportDocument.getInteger("version");
+        }
+        return 1;
+    }
+
     public User getUserByUserId(String userId) {
         BasicDBObject userSearchQuery = new BasicDBObject();
         userSearchQuery.put("id", userId);
@@ -124,6 +137,14 @@ public class MongoDbClient {
         BasicDBObject commentSearchQuery = new BasicDBObject();
         commentSearchQuery.put("report_id", reportId);
         return this.countDocuments("Comment", commentSearchQuery);
+    }
+
+    public int getNumberOfTaskGivenReportId(String reportId, int version) {
+        BasicDBObject taskSearchQuery = new BasicDBObject();
+        taskSearchQuery.put("parent_comment_id", null);
+        taskSearchQuery.put("report_id", reportId);
+        taskSearchQuery.put("report_version", version);
+        return this.countDocuments("InlineComment", taskSearchQuery);
     }
 
 }
